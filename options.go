@@ -1,5 +1,7 @@
 package bitcaskminidb
 
 type Options struct {
-	DirPath string
+	DirPath      string
+	DataFileSize int64 // max size of file
+	SyncWrites   bool  // whether sync after write
 }
