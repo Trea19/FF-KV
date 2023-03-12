@@ -3,6 +3,7 @@ package bitcaskminidb
 import (
 	"bitcask-go/data"
 	"bitcask-go/index"
+	"os"
 	"sync"
 )
 
@@ -14,7 +15,46 @@ type DB struct {
 	index      index.Indexer
 }
 
-// storage engine instance
+// open the bitcask-db instance
+func Open(options Options) (*DB, error) {
+	// check the input_options
+	if err := CheckOptions(options); err != nil {
+		return nil, err
+	}
+
+	// if option.dir does not exist, then create it
+	if _, err := os.Stat(options.DirPath); os.IsNotExist(err) {
+		if err = os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
+			return nil, err
+		}
+	}
+
+	// initialize DB struct
+	db := &DB{
+		options:    options,
+		mu:         new(sync.RWMutex),
+		olderFiles: make(map[uint32]*data.DataFile),
+		index:      index.NewIndexer(index.IndexType(options.IndexType)),
+	}
+
+	// load data files
+	// TO DO
+}
+
+// check input options
+func CheckOptions(options Options) error {
+	if options.DirPath == "" {
+		return ErrDBDirIsEmpty
+	}
+
+	if options.DataFileSize <= 0 {
+		return ErrInvalidFileSize
+	}
+
+	return nil
+}
+
+// storage engine instance_put
 func (db *DB) Put(key []byte, value []byte) error {
 	if len(key) == 0 {
 		return ErrKeyIsEmpty
