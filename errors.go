@@ -11,4 +11,6 @@ var (
 	// options
 	ErrDBDirIsEmpty    = errors.New("database dir is empty")
 	ErrInvalidFileSize = errors.New("database file size must be greater than 0")
+	// db_dir
+	ErrDataDirCorrupted = errors.New("database directory maybe corrupted")
 )

@@ -4,6 +4,9 @@ import (
 	"bitcask-go/data"
 	"bitcask-go/index"
 	"os"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -38,7 +41,56 @@ func Open(options Options) (*DB, error) {
 	}
 
 	// load data files
-	// TO DO
+	if err := db.LoadDataFiles(); err != nil {
+		return nil, err
+	}
+
+	// TODO
+	// load index of the datafiles
+	// Ch6 - 21:54
+
+	return db, nil
+}
+
+func (db *DB) LoadDataFiles() error {
+	dirEntries, err := os.ReadDir(db.options.DirPath)
+	if err != nil {
+		return nil
+	}
+
+	var fileIds []int
+	//specify that the data file end with .data
+	for _, entry := range dirEntries {
+		if strings.HasSuffix(entry.Name(), data.DataFileNameSuffix) { // if find the file ends with .data
+			// get the file id by split filename  eg. 000001.data
+			splitNames := strings.Split(entry.Name(), ".")
+			fileId, err := strconv.Atoi(splitNames[0])
+			if err != nil {
+				return ErrDataDirCorrupted
+			}
+			fileIds = append(fileIds, fileId)
+		}
+	}
+
+	// to load files from small id to large, we need sort
+	sort.Ints(fileIds)
+
+	// iterate the file id, and open them
+	for i, fid := range fileIds {
+		datafile, err := data.OpenDataFile(db.options.DirPath, uint32(fid))
+		if err != nil {
+			return err
+		}
+
+		// file with the largest id is the active file, others are older files
+		if i == len(fileIds)-1 {
+			db.activeFile = datafile
+		} else {
+			db.olderFiles[uint32(fid)] = datafile
+		}
+	}
+
+	return nil
 }
 
 // check input options

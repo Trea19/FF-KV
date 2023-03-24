@@ -2,6 +2,8 @@ package data
 
 import "bitcask-go/fio"
 
+const DataFileNameSuffix = ".data"
+
 type DataFile struct {
 	FileId    uint32
 	WriteOff  int64         // offset
