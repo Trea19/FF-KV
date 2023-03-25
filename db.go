@@ -3,6 +3,7 @@ package bitcaskminidb
 import (
 	"bitcask-go/data"
 	"bitcask-go/index"
+	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 type DB struct {
 	options    Options
 	mu         *sync.RWMutex
+	fileIds    []int                     // only for loading index from data files
 	activeFile *data.DataFile            //current active file, append log_record
 	olderFiles map[uint32]*data.DataFile //order files, read only
 	index      index.Indexer
@@ -47,9 +49,61 @@ func Open(options Options) (*DB, error) {
 
 	// TODO
 	// load index of the datafiles
-	// Ch6 - 21:54
+	if err := db.LoadIndexFromDataFiles(); err != nil {
+		return nil, err
+	}
 
 	return db, nil
+}
+
+// load index from data files, iterate the records in files, and update memory index
+func (db *DB) LoadIndexFromDataFiles() error {
+	// if database is empty
+	if len(db.fileIds) == 0 {
+		return nil
+	}
+
+	for i, fid := range db.fileIds {
+		// get data file
+		var fileId = uint32(fid)
+		var dataFile *data.DataFile
+
+		if fileId == db.activeFile.FileId {
+			dataFile = db.activeFile
+		} else {
+			dataFile = db.olderFiles[fileId]
+		}
+
+		// get contents of current data file
+		var offset int64 = 0
+		for {
+			logRecord, size, err := dataFile.ReadLogRecord(offset)
+			if err != nil {
+				// situation 1 : finish read
+				if err == io.EOF {
+					break
+				}
+				// others
+				return err
+			}
+
+			//  construct memory index and save
+			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset}
+			if logRecord.Type == data.LogRecordDeleted {
+				db.index.Delete(logRecord.Key)
+			} else {
+				db.index.Put(logRecord.Key, logRecordPos)
+			}
+			offset += size
+		}
+
+		// if current datafile is active file, update write offset
+		if i == len(db.fileIds)-1 {
+			db.activeFile.WriteOff = offset
+		}
+	}
+
+	return nil
 }
 
 func (db *DB) LoadDataFiles() error {
@@ -74,6 +128,7 @@ func (db *DB) LoadDataFiles() error {
 
 	// to load files from small id to large, we need sort
 	sort.Ints(fileIds)
+	db.fileIds = fileIds
 
 	// iterate the file id, and open them
 	for i, fid := range fileIds {
@@ -226,7 +281,7 @@ func (db *DB) Get(key []byte) ([]byte, error) {
 		return nil, ErrDataFileNotFound
 	}
 
-	logRecord, err := dataFile.ReadLogRecord(logRecordPos.Offset)
+	logRecord, _, err := dataFile.ReadLogRecord(logRecordPos.Offset)
 	if err != nil {
 		return nil, err
 	}
