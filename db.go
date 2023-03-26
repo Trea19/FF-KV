@@ -293,3 +293,30 @@ func (db *DB) Get(key []byte) ([]byte, error) {
 
 	return logRecord.Value, nil
 }
+
+func (db *DB) Delete(key []byte) error {
+	if len(key) == 0 {
+		return ErrKeyIsEmpty
+	}
+
+	// whether the key is exist
+	if pos := db.index.Get(key); pos == nil {
+		return nil
+	}
+
+	// if exist, create a delete record
+	logRecord := &data.LogRecord{Key: key, Type: data.LogRecordDeleted}
+	// append to log record
+	_, err := db.AppendLogRecord(logRecord)
+	if err != nil {
+		return err
+	}
+
+	// delete the key from memory index
+	ok := db.index.Delete(key)
+	if !ok {
+		return ErrUpdateIndexFailed
+	}
+
+	return nil
+}
