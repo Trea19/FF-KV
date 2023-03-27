@@ -8,3 +8,8 @@ type IOManager interface {
 	Sync() error                     //persist data
 	Close() error                    //close file
 }
+
+// initialize IOManger, support standard FileIO
+func NewIOManager(fileName string) (IOManager, error) {
+	return NewFileIOManager(fileName) // standard FileIO
+}
