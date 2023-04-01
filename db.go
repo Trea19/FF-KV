@@ -47,7 +47,6 @@ func Open(options Options) (*DB, error) {
 		return nil, err
 	}
 
-	// TODO
 	// load index of the datafiles
 	if err := db.LoadIndexFromDataFiles(); err != nil {
 		return nil, err

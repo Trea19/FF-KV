@@ -3,6 +3,7 @@ package data
 import (
 	"bitcask-go/fio"
 	"fmt"
+	"io"
 	"path/filepath"
 )
 
@@ -31,8 +32,20 @@ func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
 	return dataFile, nil
 }
 
-// TODO 8-1413
 func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
+	// read header
+	headBuf, err := df.readNBytes(maxLogRecordHeaderSize, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	//decode the header
+	header, headerSize := DecodeLogRecordHeader(headBuf)
+	if header == nil { //finish reading
+		return nil, 0, io.EOF
+	}
+
+	// TODO 8-2100
+
 	return nil, 0, nil
 }
 
@@ -42,4 +55,10 @@ func (df *DataFile) Write(buf []byte) error {
 
 func (df *DataFile) Sync() error {
 	return nil
+}
+
+func (df *DataFile) readNBytes(n int64, offset int64) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := df.IOManager.Read(b, offset)
+	return b, err
 }
