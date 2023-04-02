@@ -40,12 +40,18 @@ func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
 	}
 	//decode the header
 	header, headerSize := DecodeLogRecordHeader(headBuf)
-	if header == nil { //finish reading
+	//finish reading
+	if header == nil {
+		return nil, 0, io.EOF
+	}
+	if header.crc == 0 && header.keySize == 0 && header.valueSize == 0 {
 		return nil, 0, io.EOF
 	}
 
-	// TODO 8-2100
+	keySize, valueSize := int64(header.keySize), int64(header.valueSize)
+	var recordSize = headerSize + keySize + valueSize
 
+	//TODO 8-2353
 	return nil, 0, nil
 }
 
