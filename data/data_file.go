@@ -2,9 +2,15 @@ package data
 
 import (
 	"bitcask-go/fio"
+	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"path/filepath"
+)
+
+var (
+	ErrInvalidCRC = errors.New("invalid crc value, log record maybe corrupted")
 )
 
 const DataFileNameSuffix = ".data"
@@ -33,6 +39,8 @@ func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
 }
 
 func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
+
+	//TODO 8-3048
 	// read header
 	headBuf, err := df.readNBytes(maxLogRecordHeaderSize, offset)
 	if err != nil {
@@ -51,16 +59,40 @@ func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
 	keySize, valueSize := int64(header.keySize), int64(header.valueSize)
 	var recordSize = headerSize + keySize + valueSize
 
-	//TODO 8-2353
-	return nil, 0, nil
+	logRecord := &LogRecord{Type: header.recordType}
+	// read key and value
+	if keySize > 0 && valueSize > 0 {
+		kvBuf, err := df.readNBytes(keySize+valueSize, offset+headerSize)
+		if err != nil {
+			return nil, 0, err
+		}
+		logRecord.Key = kvBuf[:keySize]
+		logRecord.Value = kvBuf[keySize:]
+	}
+
+	//check crc
+	crc := getLogRecordCRC(logRecord, headBuf[crc32.Size:headerSize])
+	if crc != header.crc {
+		return nil, 0, ErrInvalidCRC
+	}
+	return logRecord, recordSize, nil
 }
 
 func (df *DataFile) Write(buf []byte) error {
+	n, err := df.IOManager.Write(buf)
+	if err != nil {
+		return err
+	}
+	df.WriteOff += int64(n)
 	return nil
 }
 
 func (df *DataFile) Sync() error {
-	return nil
+	return df.IOManager.Sync()
+}
+
+func (df *DataFile) Close() error {
+	return df.IOManager.Close()
 }
 
 func (df *DataFile) readNBytes(n int64, offset int64) ([]byte, error) {
