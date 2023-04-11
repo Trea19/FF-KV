@@ -22,7 +22,7 @@ type DataFile struct {
 }
 
 func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
-	fileName := filepath.Join(path_dir, fmt.Sprint("%09d", file_id)+DataFileNameSuffix)
+	fileName := filepath.Join(path_dir, fmt.Sprintf("%09d", file_id)+DataFileNameSuffix)
 	// initialize io_manager
 	io_manager, err := fio.NewIOManager(fileName)
 	if err != nil {
@@ -39,10 +39,17 @@ func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
 }
 
 func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
-
-	//TODO 8-3048
+	fileSize, err := df.IOManager.Size()
+	if err != nil {
+		return nil, 0, err
+	}
+	// if ... , read to the end of the file
+	var headerBytes int64 = maxLogRecordHeaderSize
+	if headerBytes+offset > fileSize {
+		headerBytes = fileSize - offset
+	}
 	// read header
-	headBuf, err := df.readNBytes(maxLogRecordHeaderSize, offset)
+	headBuf, err := df.readNBytes(headerBytes, offset)
 	if err != nil {
 		return nil, 0, err
 	}

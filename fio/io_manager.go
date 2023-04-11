@@ -7,6 +7,7 @@ type IOManager interface {
 	Write([]byte) (int, error)       //write []byte into file
 	Sync() error                     //persist data
 	Close() error                    //close file
+	Size() (int64, error)            //get file size
 }
 
 // initialize IOManger, support standard FileIO
