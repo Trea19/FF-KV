@@ -1,6 +1,9 @@
 package data
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"hash/crc32"
+)
 
 type LogRecordType = byte
 
@@ -32,11 +35,49 @@ type LogRecordPos struct {
 	Offset int64  //where in the file
 }
 
+//	+-------------+-------------+-------------+--------------+-------------+--------------+
+//	| crc         |  type       |    key size |   value size |      key    |      value   |
+//	+-------------+-------------+-------------+--------------+-------------+--------------+
+//	    4 bytes       1 byte     VarLen（max:5）VarLen（max:5）  VarLen         VarLen
+
 // encode, from log_record(struct) to []byte
+// return encode log record and the length of that
 func EncodeLogRecord(log_record *LogRecord) ([]byte, int64) {
-	return nil, 0
+	//initialize the header
+	header := make([]byte, maxLogRecordHeaderSize)
+
+	//quit crc
+	//type
+	header[4] = log_record.Type
+
+	//key_sz use variable length arry
+	var index = 5
+	index += binary.PutVarint(header[index:], int64(len(log_record.Key)))
+
+	//value_sz
+	index += binary.PutVarint(header[index:], int64(len(log_record.Value)))
+
+	//as we need to return the length of the record
+	var recordSize = index + len(log_record.Key) + len(log_record.Value)
+	//as we need to return the obj encoded log record
+	//initialize the space, according to recordSize
+	encBytes := make([]byte, recordSize)
+	//copy header array to encBytes array
+	copy(encBytes[:index], header[:index])
+	//copy key to encBytes array
+	copy(encBytes[index:], log_record.Key)
+	//copy value to encBytes array
+	copy(encBytes[index+len(log_record.Key):], log_record.Value)
+
+	//set crc
+	crc := crc32.ChecksumIEEE(encBytes[4:])
+	//copy crc to encBytes array, use little endian
+	binary.LittleEndian.PutUint32(encBytes[:4], crc)
+
+	return encBytes, int64(recordSize)
 }
 
+// TODO 9-1627
 func DecodeLogRecordHeader(buf []byte) (*LogRecordHeader, int64) {
 	return nil, 0
 }
