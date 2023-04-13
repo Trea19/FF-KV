@@ -77,11 +77,44 @@ func EncodeLogRecord(log_record *LogRecord) ([]byte, int64) {
 	return encBytes, int64(recordSize)
 }
 
-// TODO 9-1627
+// return header and the length of header
 func DecodeLogRecordHeader(buf []byte) (*LogRecordHeader, int64) {
-	return nil, 0
+	//if len(buf) <= len(crc), error
+	if len(buf) <= 4 {
+		return nil, 0
+	}
+	// we need to return log_record_header(struct)
+	// get crc and type
+	header := &LogRecordHeader{
+		crc:        binary.LittleEndian.Uint32(buf[:4]),
+		recordType: buf[4],
+	}
+	//get key_sz
+	var index = 5
+	keySize, n := binary.Varint(buf[index:])
+	index += n
+	header.keySize = uint32(keySize)
+	//get value_sz
+	valueSize, n := binary.Varint(buf[index:])
+	index += n
+	header.valueSize = uint32(valueSize)
+
+	return header, int64(index)
 }
 
 func getLogRecordCRC(lr *LogRecord, header []byte) uint32 {
-	return 0
+	//params: logRecord, headBuf[crc32.Size:headerSize]
+	//if logRecord = nil
+	if lr == nil {
+		return 0
+	}
+
+	// get crc of header(the input header include type, key_sz, value_sz)
+	crc := crc32.ChecksumIEEE(header[:])
+	// add key
+	crc32.Update(crc, crc32.IEEETable, lr.Key)
+	// add value
+	crc32.Update(crc, crc32.IEEETable, lr.Value)
+
+	return crc
 }
