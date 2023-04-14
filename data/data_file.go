@@ -75,6 +75,7 @@ func (df *DataFile) ReadLogRecord(offset int64) (*LogRecord, int64, error) {
 		}
 		logRecord.Key = kvBuf[:keySize]
 		logRecord.Value = kvBuf[keySize:]
+		// fmt.Printf("key:%s, value:%s", logRecord.Key, logRecord.Value)
 	}
 
 	//check crc

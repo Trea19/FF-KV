@@ -1,0 +1,10 @@
+{
+  "C_Cpp.commentContinuationPatterns": ["/**"],
+  "editor.codeActionsOnSave": null,
+  "go.alternateTools": {},
+  "go.liveErrors": {
+    "enabled": false,
+    "delay": 500
+  },
+  "go.testFlags": ["-v"]
+}
