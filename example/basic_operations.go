@@ -10,6 +10,9 @@ func main() {
 	opt.DirPath = "/tmp/bitcask-go-example"
 
 	db, err := bitcask.Open(opt)
+	if err != nil {
+		panic(err)
+	}
 
 	// Put
 	err = db.Put([]byte("hello"), []byte("world"))
@@ -29,6 +32,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 //TODO 9-010220
