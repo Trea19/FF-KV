@@ -45,3 +45,14 @@ type Item struct {
 func (ai *Item) Less(bi btree.Item) bool {
 	return bytes.Compare(ai.key, bi.(*Item).key) == -1
 }
+
+// abstract index-iterator interface
+type Iterator interface {
+	Rewind()                   // go back to the first data of iterator
+	Seek(key []byte)           // find the first target key which is >= or <= params-key, and start traversing from target key
+	Next()                     // jump to the next key
+	Valid() bool               // used to determine whether the traversal has been completed
+	Key() []byte               // get key of current postion
+	Value() *data.LogRecordPos // get value of current positon
+	Close()                    // close iterator and release resources
+}
