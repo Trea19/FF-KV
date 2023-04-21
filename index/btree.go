@@ -2,6 +2,8 @@ package index
 
 import (
 	"bitcask-go/data"
+	"bytes"
+	"sort"
 	"sync"
 
 	"github.com/google/btree"
@@ -90,32 +92,40 @@ func (bti *btreeIterator) Rewind() {
 	bti.curIndex = 0
 }
 
-// find the first target key which is >= or <= params-key, and start traversing from target key
+// find the first target key which is >= or <=(reverse) params-key, and start traversing from target key
 func (bti *btreeIterator) Seek(key []byte) {
-	// TODO 10-2329
+	if bti.reverse {
+		bti.curIndex = sort.Search(len(bti.values), func(i int) bool {
+			return bytes.Compare(bti.values[i].key, key) <= 0
+		})
+	} else {
+		bti.curIndex = sort.Search(len(bti.values), func(i int) bool {
+			return bytes.Compare(bti.values[i].key, key) >= 0
+		})
+	}
 }
 
 // jump to the next key
 func (bti *btreeIterator) Next() {
-
+	bti.curIndex += 1
 }
 
 // used to determine whether the traversal has been completed
 func (bti *btreeIterator) Valid() bool {
-
+	return bti.curIndex < len(bti.values)
 }
 
 // get key of current postion
 func (bti *btreeIterator) Key() []byte {
-
+	return bti.values[bti.curIndex].key
 }
 
 // get value of current positon
 func (bti *btreeIterator) Value() *data.LogRecordPos {
-
+	return bti.values[bti.curIndex].pos
 }
 
 // close iterator and release resources
 func (bti *btreeIterator) Close() {
-
+	bti.values = nil
 }
