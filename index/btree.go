@@ -49,11 +49,16 @@ func (bt *BTree) Delete(key []byte) bool {
 	oldItem := bt.tree.Delete(it)
 
 	bt.lock.Unlock()
-	if oldItem == nil {
-		return false
-	}
+	return oldItem != nil
+}
 
-	return true
+func (bt *BTree) Iterator(reverse bool) Iterator {
+	if bt == nil {
+		return nil
+	}
+	bt.lock.RLock()
+	defer bt.lock.RUnlock()
+	return NewBtreeIterator(bt.tree, reverse)
 }
 
 // btree's index iterator

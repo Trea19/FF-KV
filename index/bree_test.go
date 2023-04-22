@@ -53,3 +53,46 @@ func TestBtree_Delete(t *testing.T) {
 	res4 := bt.Delete([]byte("aaa"))
 	assert.True(t, res4)
 }
+
+func TestBtree_Iterator(t *testing.T) {
+	bt1 := NewBtree()
+	// case1: bt1 = nil
+	it1 := NewBtreeIterator(bt1.tree, false)
+	assert.Equal(t, it1.Valid(), false)
+
+	// case2: have one log record
+	bt1.Put([]byte("abcd"), &data.LogRecordPos{Fid: 1, Offset: 10})
+	it2 := NewBtreeIterator(bt1.tree, false)
+	assert.Equal(t, it2.Valid(), true)
+	assert.NotNil(t, it2.Key())
+	assert.NotNil(t, it2.Value())
+	it2.Next()
+	assert.Equal(t, it2.Valid(), false)
+
+	// case3: add more log records
+	bt1.Put([]byte("bcde"), &data.LogRecordPos{Fid: 1, Offset: 20})
+	bt1.Put([]byte("cdef"), &data.LogRecordPos{Fid: 1, Offset: 30})
+	bt1.Put([]byte("defg"), &data.LogRecordPos{Fid: 1, Offset: 40})
+	it3 := NewBtreeIterator(bt1.tree, false)
+	for it3.Rewind(); it3.Valid(); it3.Next() {
+		assert.NotNil(t, it3.Key())
+	}
+	it4 := NewBtreeIterator(bt1.tree, true)
+	for it4.Rewind(); it3.Valid(); it3.Next() {
+		assert.NotNil(t, it3.Key())
+	}
+
+	// case4: test seek()
+	it5 := NewBtreeIterator(bt1.tree, false)
+	for it5.Seek([]byte("cd")); it5.Valid(); it5.Next() {
+		// t.Log(it5.Key())
+		assert.NotNil(t, it5.Key())
+	}
+
+	// case5: test reverse seek()
+	it6 := NewBtreeIterator(bt1.tree, true)
+	for it6.Seek([]byte("zz")); it6.Valid(); it6.Next() {
+		// t.Log(it6.Key())
+		assert.NotNil(t, it6.Key())
+	}
+}
