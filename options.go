@@ -11,6 +11,14 @@ type Options struct {
 
 type IndexerType int8
 
+// users-iterator configuration item
+type IteratorOptions struct {
+	// traverse all keys prefixed with Prefix
+	Prefix []byte
+	// if reverse traverse, default: false
+	Reverse bool
+}
+
 const (
 	Btree IndexerType = iota + 1
 	ARtree
@@ -22,4 +30,9 @@ var DefalutOptions = Options{
 	DataFileSize: 256 * 1024 * 1024, //256MB
 	SyncWrites:   false,
 	IndexType:    Btree,
+}
+
+var DefalutIteratorOptions = IteratorOptions{
+	Prefix:  nil,
+	Reverse: false,
 }
