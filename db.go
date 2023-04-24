@@ -251,6 +251,7 @@ func (db *DB) SetActiveDataFile() error {
 	return nil
 }
 
+// get value according to key
 func (db *DB) Get(key []byte) ([]byte, error) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
@@ -267,30 +268,7 @@ func (db *DB) Get(key []byte) ([]byte, error) {
 		return nil, ErrKeyNotFound
 	}
 
-	// according to the pos_fid, find that file
-	var dataFile *data.DataFile
-	if logRecordPos.Fid == db.activeFile.FileId {
-		dataFile = db.activeFile
-	} else {
-		dataFile = db.olderFiles[logRecordPos.Fid]
-	}
-
-	// if data file is not found ...
-	if dataFile == nil {
-		return nil, ErrDataFileNotFound
-	}
-
-	logRecord, _, err := dataFile.ReadLogRecord(logRecordPos.Offset)
-	if err != nil {
-		return nil, err
-	}
-
-	// the record is already deleted
-	if logRecord.Type == data.LogRecordDeleted {
-		return nil, ErrKeyNotFound
-	}
-
-	return logRecord.Value, nil
+	return db.getValueByPosition(logRecordPos)
 }
 
 func (db *DB) Delete(key []byte) error {
@@ -318,4 +296,33 @@ func (db *DB) Delete(key []byte) error {
 	}
 
 	return nil
+}
+
+// according to the logrecordPos, get the related value
+func (db *DB) getValueByPosition(lrp *data.LogRecordPos) ([]byte, error) {
+	// get the datafile according to the file id
+	var dataFile *data.DataFile
+	if db.activeFile.FileId == lrp.Fid {
+		dataFile = db.activeFile
+	} else {
+		dataFile = db.olderFiles[lrp.Fid]
+	}
+
+	// datafile not found
+	if dataFile == nil {
+		return nil, ErrDataFileNotFound
+	}
+
+	// error when reading log record
+	logRecord, _, err := dataFile.ReadLogRecord(lrp.Offset)
+	if err != nil {
+		return nil, err
+	}
+
+	// log record already been deleted
+	if logRecord.Type == data.LogRecordDeleted {
+		return nil, ErrKeyNotFound
+	}
+
+	return logRecord.Value, nil
 }

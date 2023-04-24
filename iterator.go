@@ -2,6 +2,7 @@ package bitcaskminidb
 
 import (
 	"bitcask-go/index"
+	"bytes"
 )
 
 // for users
@@ -51,10 +52,25 @@ func (it *Iterator) Value() ([]byte, error) {
 	lr := it.indexIter.Value()
 	it.db.mu.RLock()
 	defer it.db.mu.RUnlock()
-	// TODO10-4754
+	return it.db.getValueByPosition(lr)
 }
 
 // close iterator and release resources
 func (it *Iterator) Close() {
 	it.indexIter.Close()
+}
+
+func (it *Iterator) skipToNext() {
+	prefixLen := len(it.opts.Prefix)
+	// if prefix = nil , return
+	if prefixLen == 0 {
+		return
+	}
+
+	for ; it.indexIter.Valid(); it.Next() {
+		key := it.indexIter.Key()
+		if prefixLen <= len(key) && bytes.Compare(it.opts.Prefix, key[:prefixLen]) == 0 {
+			break
+		}
+	}
 }
