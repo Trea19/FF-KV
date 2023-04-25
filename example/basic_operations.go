@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	opt := bitcask.DefalutOptions
+	opt := bitcask.DefaultOptions
 	opt.DirPath = "/tmp/bitcask-go-example"
 
 	db, err := bitcask.Open(opt)

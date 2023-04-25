@@ -13,6 +13,7 @@ type Indexer interface {
 	Get(key []byte) *data.LogRecordPos
 	Delete(key []byte) bool
 	Iterator(reverse bool) Iterator
+	Size() int
 }
 
 type IndexType = int8

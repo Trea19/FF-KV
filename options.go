@@ -25,14 +25,14 @@ const (
 )
 
 // for example
-var DefalutOptions = Options{
+var DefaultOptions = Options{
 	DirPath:      os.TempDir(),
 	DataFileSize: 256 * 1024 * 1024, //256MB
 	SyncWrites:   false,
 	IndexType:    Btree,
 }
 
-var DefalutIteratorOptions = IteratorOptions{
+var DefaultIteratorOptions = IteratorOptions{
 	Prefix:  nil,
 	Reverse: false,
 }

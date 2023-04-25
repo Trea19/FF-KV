@@ -9,7 +9,7 @@ import (
 )
 
 func TestDB_NewIterator(t *testing.T) {
-	opts := DefalutOptions
+	opts := DefaultOptions
 	dir, _ := os.MkdirTemp("", "bitcask-go-iterator-1")
 	opts.DirPath = dir
 	db, err := Open(opts)
@@ -17,14 +17,14 @@ func TestDB_NewIterator(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, db)
 
-	it := db.NewIterator(DefalutIteratorOptions)
+	it := db.NewIterator(DefaultIteratorOptions)
 	defer it.Close()
 	assert.NotNil(t, it)
 	assert.Equal(t, it.Valid(), false)
 }
 
 func TestDB_Iterator_One_Value(t *testing.T) {
-	opts := DefalutOptions
+	opts := DefaultOptions
 	dir, _ := os.MkdirTemp("", "bitcack-go-iterator-2")
 	opts.DirPath = dir
 	db, err := Open(opts)
@@ -36,7 +36,7 @@ func TestDB_Iterator_One_Value(t *testing.T) {
 	err = db.Put(utils.GetTestKey(10), inputVal)
 	assert.Nil(t, err)
 
-	it := db.NewIterator(DefalutIteratorOptions)
+	it := db.NewIterator(DefaultIteratorOptions)
 	defer it.Close()
 	assert.NotNil(t, it)
 	assert.Equal(t, it.Valid(), true)
@@ -47,7 +47,7 @@ func TestDB_Iterator_One_Value(t *testing.T) {
 }
 
 func TestDB_Iterator_Multi_Values(t *testing.T) {
-	opts := DefalutOptions
+	opts := DefaultOptions
 	dir, _ := os.MkdirTemp("", "bitcask-go-iterator-3")
 	opts.DirPath = dir
 	db, err := Open(opts)
@@ -66,7 +66,7 @@ func TestDB_Iterator_Multi_Values(t *testing.T) {
 	assert.Nil(t, err)
 
 	// reverse = false
-	it1 := db.NewIterator(DefalutIteratorOptions)
+	it1 := db.NewIterator(DefaultIteratorOptions)
 	for it1.Rewind(); it1.Valid(); it1.Next() {
 		assert.NotNil(t, it1.Key())
 	}
@@ -77,7 +77,7 @@ func TestDB_Iterator_Multi_Values(t *testing.T) {
 	it1.Close()
 
 	// reverse = true
-	it2 := db.NewIterator(DefalutIteratorOptions)
+	it2 := db.NewIterator(DefaultIteratorOptions)
 	it2.opts.Reverse = true
 	for it2.Rewind(); it2.Valid(); it2.Next() {
 		assert.NotNil(t, it2.Key())
@@ -89,7 +89,7 @@ func TestDB_Iterator_Multi_Values(t *testing.T) {
 	it2.Close()
 
 	// prefix != nil
-	it3 := db.NewIterator(DefalutIteratorOptions)
+	it3 := db.NewIterator(DefaultIteratorOptions)
 	it3.opts.Prefix = []byte("bb")
 	for it3.Rewind(); it3.Valid(); it3.Next() {
 		assert.NotNil(t, it3.Key())

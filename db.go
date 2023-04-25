@@ -326,3 +326,68 @@ func (db *DB) getValueByPosition(lrp *data.LogRecordPos) ([]byte, error) {
 
 	return logRecord.Value, nil
 }
+
+// get all keys in index
+func (db *DB) ListKeys() [][]byte {
+	it := db.index.Iterator(false)
+	defer it.Close()
+	keys := make([][]byte, db.index.Size())
+	var idx int
+	for it.Rewind(); it.Valid(); it.Next() {
+		keys[idx] = it.Key()
+		idx++
+	}
+	return keys
+}
+
+// get all kv and perform user's specified actions(by param-fn)
+func (db *DB) Fold(fn func(key []byte, value []byte) bool) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	it := db.index.Iterator(false)
+	defer it.Close()
+
+	for it.Rewind(); it.Valid(); it.Next() {
+		val, err := db.getValueByPosition(it.Value())
+		if err != nil {
+			return err
+		}
+		if !fn(it.Key(), val) {
+			break // if fn return false, break
+		}
+	}
+	return nil
+}
+
+// close database
+func (db *DB) Close() error {
+	if db.activeFile == nil {
+		return nil
+	}
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	// close active file
+	if err := db.activeFile.Close(); err != nil {
+		return err
+	}
+	// close older files
+	for _, file := range db.olderFiles {
+		if err := file.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sync
+func (db *DB) Sync() error {
+	if db.activeFile == nil {
+		return nil
+	}
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	return db.activeFile.Sync()
+}
