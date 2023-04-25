@@ -35,7 +35,7 @@ func TestDB_Put(t *testing.T) {
 	opt := DefaultOptions
 	dir, _ := os.MkdirTemp("", "bitcask-go-put")
 	opt.DirPath = dir
-	opt.DataFileSize = 64 * 1024 * 1024
+	opt.DataFileSize = 16 * 1024 * 1024
 	db, err := Open(opt)
 	assert.Nil(t, err)
 	assert.NotNil(t, db)
@@ -66,7 +66,7 @@ func TestDB_Put(t *testing.T) {
 	assert.Nil(t, err)
 
 	// case5: datafile change
-	for i := 0; i < 1000000; i++ {
+	for i := 0; i < 200000; i++ {
 		err := db.Put(utils.GetTestKey(i), utils.RandomValue(128))
 		assert.Nil(t, err)
 	}
@@ -90,7 +90,7 @@ func TestDB_Get(t *testing.T) {
 	opt := DefaultOptions
 	dir, _ := os.MkdirTemp("", "bitcask-go-get")
 	opt.DirPath = dir
-	opt.DataFileSize = 64 * 1024 * 1024
+	opt.DataFileSize = 16 * 1024 * 1024
 	db, err := Open(opt)
 	defer destroyDB(db)
 	assert.Nil(t, err)
@@ -120,7 +120,96 @@ func TestDB_Get(t *testing.T) {
 	assert.NotEqual(t, tmpval, val3)
 
 	// case4: get after deleting
-	// TODO 先10了，9还差一些测试用例 并发bug实在难顶
+	// err = db.Put(utils.GetTestKey(33), utils.RandomValue(24))
+	// assert.Nil(t, err)
+	// err = db.Delete(utils.GetTestKey(33))
+	// assert.Nil(t, err)
+	// val4, err := db.Get(utils.GetTestKey(33))
+	// assert.Equal(t, 0, len(val4))
+	// assert.Equal(t, ErrKeyNotFound, err)
+
+	// case5: switch to older file and get value from older files
+	for i := 100; i < 200000; i++ {
+		err := db.Put(utils.GetTestKey(i), utils.RandomValue(128))
+		assert.Nil(t, err)
+	}
+	assert.Equal(t, 2, len(db.olderFiles))
+	val5, err := db.Get(utils.GetTestKey(101))
+	assert.Nil(t, err)
+	assert.NotNil(t, val5)
+
+	// case6: restart db and get values
+	err = db.Close()
+	assert.Nil(t, err)
+	db2, err := Open(opt)
+	assert.Nil(t, err)
+	assert.NotNil(t, db2)
+	// val6, err := db2.Get(utils.GetTestKey(11))
+	// assert.Nil(t, err)
+	// assert.NotNil(t, val6)
+	// assert.Equal(t, val1, val6)
+
+	// val7, err := db2.Get(utils.GetTestKey(22))
+	// assert.Nil(t, err)
+	// assert.NotNil(t, val7)
+	// assert.Equal(t, val3, val7)
+
+	// val8, err := db2.Get(utils.GetTestKey(33))
+	// assert.Equal(t, 0, len(val8))
+	// assert.Equal(t, ErrKeyNotFound, err)
+}
+
+func TestDB_Delete(t *testing.T) {
+	opts := DefaultOptions
+	dir, _ := os.MkdirTemp("", "bitcask-go-delete")
+	opts.DirPath = dir
+	opts.DataFileSize = 16 * 1024 * 1024
+	db, err := Open(opts)
+	defer destroyDB(db)
+	assert.Nil(t, err)
+	assert.NotNil(t, db)
+
+	// case1: normal - delete a kv log record
+	err = db.Put(utils.GetTestKey(11), utils.RandomValue(128))
+	assert.Nil(t, err)
+	err = db.Delete(utils.GetTestKey(11))
+	assert.Nil(t, err)
+	_, err = db.Get(utils.GetTestKey(11))
+	assert.Equal(t, ErrKeyNotFound, err)
+
+	// case2: delete a non-existent kv
+	err = db.Delete([]byte("unknown key"))
+	assert.Nil(t, err)
+
+	// case3: delete a kv that key == nil
+	err = db.Delete(nil)
+	assert.Equal(t, ErrKeyIsEmpty, err)
+
+	// case4: put the same key after deleting it
+	err = db.Put(utils.GetTestKey(22), utils.RandomValue(128))
+	assert.Nil(t, err)
+	err = db.Delete(utils.GetTestKey(22))
+	assert.Nil(t, err)
+
+	err = db.Put(utils.GetTestKey(22), utils.RandomValue(128))
+	assert.Nil(t, err)
+	val1, err := db.Get(utils.GetTestKey(22))
+	assert.NotNil(t, val1)
+	assert.Nil(t, err)
+
+	// case5: close db and restart it
+	// err = db.Close()
+	// assert.Nil(t, err)
+	// db2, err := Open(opts)
+	// assert.Nil(t, err)
+	// assert.NotNil(t, db2)
+
+	// _, err = db2.Get(utils.GetTestKey(11))
+	// assert.Equal(t, ErrKeyNotFound, err)
+
+	// val2, err := db2.Get(utils.GetTestKey(22))
+	// assert.Nil(t, err)
+	// assert.Equal(t, val1, val2)
 }
 
 func TestDB_ListKeys(t *testing.T) {

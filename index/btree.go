@@ -44,7 +44,7 @@ func (bt *BTree) Get(key []byte) *data.LogRecordPos {
 
 func (bt *BTree) Delete(key []byte) bool {
 	it := &Item{key: key}
-	bt.lock.Unlock()
+	bt.lock.Lock()
 
 	oldItem := bt.tree.Delete(it)
 
