@@ -37,6 +37,7 @@ func TestDB_Put(t *testing.T) {
 	opt.DirPath = dir
 	opt.DataFileSize = 16 * 1024 * 1024
 	db, err := Open(opt)
+	defer destroyDB(db)
 	assert.Nil(t, err)
 	assert.NotNil(t, db)
 
@@ -77,13 +78,15 @@ func TestDB_Put(t *testing.T) {
 	assert.Nil(t, err)
 	db2, err := Open(opt)
 	assert.Nil(t, err)
-	assert.NotNil(t, db2)
+	assert.NotNil(t, db2) // TOBEFIXED: when destory, other process is using ?
 	val4 := utils.RandomValue(128)
 	err = db2.Put(utils.GetTestKey(55), val4)
 	assert.Nil(t, err)
 	val5, err := db2.Get(utils.GetTestKey(55))
 	assert.Nil(t, err)
 	assert.Equal(t, val4, val5)
+
+	db2.Close() // under windows, we have to do this
 }
 
 func TestDB_Get(t *testing.T) {
@@ -120,13 +123,13 @@ func TestDB_Get(t *testing.T) {
 	assert.NotEqual(t, tmpval, val3)
 
 	// case4: get after deleting
-	// err = db.Put(utils.GetTestKey(33), utils.RandomValue(24))
-	// assert.Nil(t, err)
-	// err = db.Delete(utils.GetTestKey(33))
-	// assert.Nil(t, err)
-	// val4, err := db.Get(utils.GetTestKey(33))
-	// assert.Equal(t, 0, len(val4))
-	// assert.Equal(t, ErrKeyNotFound, err)
+	err = db.Put(utils.GetTestKey(33), utils.RandomValue(24))
+	assert.Nil(t, err)
+	err = db.Delete(utils.GetTestKey(33))
+	assert.Nil(t, err)
+	val4, err := db.Get(utils.GetTestKey(33))
+	assert.Equal(t, 0, len(val4))
+	assert.Equal(t, ErrKeyNotFound, err)
 
 	// case5: switch to older file and get value from older files
 	for i := 100; i < 200000; i++ {
@@ -144,19 +147,21 @@ func TestDB_Get(t *testing.T) {
 	db2, err := Open(opt)
 	assert.Nil(t, err)
 	assert.NotNil(t, db2)
-	// val6, err := db2.Get(utils.GetTestKey(11))
-	// assert.Nil(t, err)
-	// assert.NotNil(t, val6)
-	// assert.Equal(t, val1, val6)
+	val6, err := db2.Get(utils.GetTestKey(11))
+	assert.Nil(t, err)
+	assert.NotNil(t, val6)
+	assert.Equal(t, val1, val6)
 
-	// val7, err := db2.Get(utils.GetTestKey(22))
-	// assert.Nil(t, err)
-	// assert.NotNil(t, val7)
-	// assert.Equal(t, val3, val7)
+	val7, err := db2.Get(utils.GetTestKey(22))
+	assert.Nil(t, err)
+	assert.NotNil(t, val7)
+	assert.Equal(t, val3, val7)
 
-	// val8, err := db2.Get(utils.GetTestKey(33))
-	// assert.Equal(t, 0, len(val8))
-	// assert.Equal(t, ErrKeyNotFound, err)
+	val8, err := db2.Get(utils.GetTestKey(33))
+	assert.Equal(t, 0, len(val8))
+	assert.Equal(t, ErrKeyNotFound, err)
+
+	db2.Close() // under windows, we have to do this
 }
 
 func TestDB_Delete(t *testing.T) {
@@ -198,18 +203,20 @@ func TestDB_Delete(t *testing.T) {
 	assert.Nil(t, err)
 
 	// case5: close db and restart it
-	// err = db.Close()
-	// assert.Nil(t, err)
-	// db2, err := Open(opts)
-	// assert.Nil(t, err)
-	// assert.NotNil(t, db2)
+	err = db.Close()
+	assert.Nil(t, err)
+	db2, err := Open(opts)
+	assert.Nil(t, err)
+	assert.NotNil(t, db2)
 
-	// _, err = db2.Get(utils.GetTestKey(11))
-	// assert.Equal(t, ErrKeyNotFound, err)
+	_, err = db2.Get(utils.GetTestKey(11))
+	assert.Equal(t, ErrKeyNotFound, err)
 
-	// val2, err := db2.Get(utils.GetTestKey(22))
-	// assert.Nil(t, err)
-	// assert.Equal(t, val1, val2)
+	val2, err := db2.Get(utils.GetTestKey(22))
+	assert.Nil(t, err)
+	assert.Equal(t, val1, val2)
+
+	db2.Close() // under windows, we have to do this
 }
 
 func TestDB_ListKeys(t *testing.T) {
