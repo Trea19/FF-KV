@@ -19,6 +19,11 @@ type IteratorOptions struct {
 	Reverse bool
 }
 
+type WriteBatchOptions struct {
+	MaxBatchNum uint // the max size(num) of one batch
+	SyncWrites  bool // if true, then sync after writing batch
+}
+
 const (
 	Btree IndexerType = iota + 1
 	ARtree
