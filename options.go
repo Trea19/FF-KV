@@ -21,7 +21,7 @@ type IteratorOptions struct {
 
 type WriteBatchOptions struct {
 	MaxBatchNum uint // the max size(num) of one batch
-	SyncWrites  bool // if true, then sync after writing batch
+	SyncWrites  bool // if true, then sync after writing batch (when committing)
 }
 
 const (
@@ -40,4 +40,9 @@ var DefaultOptions = Options{
 var DefaultIteratorOptions = IteratorOptions{
 	Prefix:  nil,
 	Reverse: false,
+}
+
+var DefaultWriteBatchOptions = WriteBatchOptions{
+	MaxBatchNum: 10000,
+	SyncWrites:  true,
 }

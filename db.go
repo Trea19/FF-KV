@@ -18,6 +18,7 @@ type DB struct {
 	activeFile *data.DataFile            //current active file, append log_record
 	olderFiles map[uint32]*data.DataFile //order files, read only
 	index      index.Indexer
+	seqNo      uint64 // id for transaction, global variable,  ++
 }
 
 // open the bitcask-db instance
@@ -62,6 +63,22 @@ func (db *DB) LoadIndexFromDataFiles() error {
 		return nil
 	}
 
+	updataIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
+		var ok bool
+		if typ == data.LogRecordDeleted {
+			ok = db.index.Delete(key)
+		} else {
+			ok = db.index.Put(key, pos)
+		}
+		if !ok {
+			panic("failed to update index")
+		}
+	}
+
+	// cache for transaction record
+	transactionRecords := make(map[uint64][]*data.TransactionRecord)
+	var currentSeqNo = noTransactionSeqNo
+
 	for i, fid := range db.fileIds {
 		// get data file
 		var fileId = uint32(fid)
@@ -88,11 +105,34 @@ func (db *DB) LoadIndexFromDataFiles() error {
 
 			//  construct memory index and save
 			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset}
-			if logRecord.Type == data.LogRecordDeleted {
-				db.index.Delete(logRecord.Key)
+
+			// parse log key, that includes seqNo and real key
+			realKey, seqNo := parseLogRecordKey(logRecord.Key)
+			if seqNo == noTransactionSeqNo { // not transaction
+				updataIndex(realKey, logRecord.Type, logRecordPos)
 			} else {
-				db.index.Put(logRecord.Key, logRecordPos)
+				// using write batch
+				if logRecord.Type == data.LogRecordTxnFinish {
+					// if transaction finish perfectly, update index
+					for _, tranRecord := range transactionRecords[seqNo] {
+						updataIndex(tranRecord.Record.Key, tranRecord.Record.Type, tranRecord.Pos)
+					}
+					delete(transactionRecords, seqNo)
+				} else {
+					// add log record to transactionRecords[seqNo]
+					logRecord.Key = realKey
+					transactionRecords[seqNo] = append(transactionRecords[seqNo], &data.TransactionRecord{
+						Record: logRecord,
+						Pos:    logRecordPos,
+					})
+				}
 			}
+
+			// update seqNo
+			if seqNo > currentSeqNo {
+				currentSeqNo = seqNo
+			}
+
 			offset += size
 		}
 
@@ -101,6 +141,9 @@ func (db *DB) LoadIndexFromDataFiles() error {
 			db.activeFile.WriteOff = offset
 		}
 	}
+
+	// update db.seqNo
+	db.seqNo = currentSeqNo
 
 	return nil
 }
@@ -168,13 +211,13 @@ func (db *DB) Put(key []byte, value []byte) error {
 
 	//if the k&v is valid, than create LogRecord
 	log_record := &data.LogRecord{
-		Key:   key,
+		Key:   logRecordKeyWithSeq(key, noTransactionSeqNo),
 		Value: value,
 		Type:  data.LogRecordNormal,
 	}
 
 	// append log to current active data file
-	pos, err := db.AppendLogRecord(log_record)
+	pos, err := db.AppendLogRecordWithLock(log_record)
 	if err != nil {
 		return err
 	}
@@ -187,10 +230,14 @@ func (db *DB) Put(key []byte, value []byte) error {
 	return nil
 }
 
-func (db *DB) AppendLogRecord(log_record *data.LogRecord) (*data.LogRecordPos, error) {
+func (db *DB) AppendLogRecordWithLock(log_record *data.LogRecord) (*data.LogRecordPos, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	return db.AppendLogRecord(log_record)
+}
+
+func (db *DB) AppendLogRecord(log_record *data.LogRecord) (*data.LogRecordPos, error) {
 	//judge whether active data file is exist
 	// if nil, than initialize the active file
 	if db.activeFile == nil {
@@ -282,9 +329,12 @@ func (db *DB) Delete(key []byte) error {
 	}
 
 	// if exist, create a delete record
-	logRecord := &data.LogRecord{Key: key, Type: data.LogRecordDeleted}
+	logRecord := &data.LogRecord{
+		Key:  logRecordKeyWithSeq(key, noTransactionSeqNo),
+		Type: data.LogRecordDeleted,
+	}
 	// append to log record
-	_, err := db.AppendLogRecord(logRecord)
+	_, err := db.AppendLogRecordWithLock(logRecord)
 	if err != nil {
 		return err
 	}

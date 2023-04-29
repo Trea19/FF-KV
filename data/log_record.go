@@ -10,6 +10,7 @@ type LogRecordType = byte
 const (
 	LogRecordNormal LogRecordType = iota
 	LogRecordDeleted
+	LogRecordTxnFinish
 )
 
 // crc type key-sz value-sz
@@ -33,6 +34,12 @@ type LogRecordHeader struct {
 type LogRecordPos struct {
 	Fid    uint32 //which file
 	Offset int64  //where in the file
+}
+
+// for write batch
+type TransactionRecord struct {
+	Record *LogRecord
+	Pos    *LogRecordPos
 }
 
 //	+-------------+-------------+-------------+--------------+-------------+--------------+

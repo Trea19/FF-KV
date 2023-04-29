@@ -13,4 +13,6 @@ var (
 	ErrInvalidFileSize = errors.New("database file size must be greater than 0")
 	// db_dir
 	ErrDataDirCorrupted = errors.New("database directory maybe corrupted")
+	// batch
+	ErrExceedMaxBatchNum = errors.New("exceed the max batch num")
 )
