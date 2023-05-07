@@ -19,6 +19,7 @@ type DB struct {
 	olderFiles map[uint32]*data.DataFile //order files, read only
 	index      index.Indexer
 	seqNo      uint64 // id for transaction, global variable,  ++
+	isMerging  bool   // if db is merging
 }
 
 // open the bitcask-db instance
