@@ -13,7 +13,10 @@ var (
 	ErrInvalidCRC = errors.New("invalid crc value, log record maybe corrupted")
 )
 
-const DataFileNameSuffix = ".data"
+const (
+	DataFileNameSuffix = ".data"
+	HintFileName       = "hint-index"
+)
 
 type DataFile struct {
 	FileId    uint32
@@ -23,6 +26,15 @@ type DataFile struct {
 
 func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
 	fileName := filepath.Join(path_dir, fmt.Sprintf("%09d", file_id)+DataFileNameSuffix)
+	return newDataFile(fileName, file_id)
+}
+
+func OpenHintFile(path string) (*DataFile, error) {
+	fileName := filepath.Join(path, HintFileName)
+	return newDataFile(fileName, 0)
+}
+
+func newDataFile(fileName string, fileId uint32) (*DataFile, error) {
 	// initialize io_manager
 	io_manager, err := fio.NewIOManager(fileName)
 	if err != nil {
@@ -30,7 +42,7 @@ func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
 	}
 
 	dataFile := &DataFile{
-		FileId:    file_id,
+		FileId:    fileId,
 		WriteOff:  0,
 		IOManager: io_manager,
 	}
@@ -92,6 +104,11 @@ func (df *DataFile) Write(buf []byte) error {
 		return err
 	}
 	df.WriteOff += int64(n)
+	return nil
+}
+
+// todo
+func (df *DataFile) WriteHintRecord(key []byte, pos *LogRecordPos) error {
 	return nil
 }
 
