@@ -113,9 +113,14 @@ func (df *DataFile) Write(buf []byte) error {
 	return nil
 }
 
-// todo
 func (df *DataFile) WriteHintRecord(key []byte, pos *LogRecordPos) error {
-	return nil
+	lr := &LogRecord{
+		Key:   key,
+		Value: EncodeLogRecordPos(pos),
+	}
+	encLogRecord, _ := EncodeLogRecord(lr)
+
+	return df.Write(encLogRecord)
 }
 
 func (df *DataFile) Sync() error {
