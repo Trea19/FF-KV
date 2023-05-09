@@ -7,9 +7,13 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 )
 
-var MergeDirSuffix = "-merge"
+const (
+	MergeDirSuffix       = "-merge"
+	MergeFinishedFileKey = "merge.finished"
+)
 
 func (db *DB) Merge() error {
 	// if db.activeFile = nil
@@ -41,6 +45,8 @@ func (db *DB) Merge() error {
 		db.mu.Unlock()
 		return err
 	}
+
+	nonMergeFileId := db.activeFile.FileId // for merge-finished-file
 
 	// get mergeList
 	var mergeFiles []*data.DataFile
@@ -125,7 +131,26 @@ func (db *DB) Merge() error {
 		return err
 	}
 
-	// todo 12-2545 new hint-finished-flag-file
+	// new merge-finished-flag-file
+	mergeFinishedFile, err := data.OpenMergeFinishedFile(mergePath)
+	if err != nil {
+		return nil
+	}
+
+	// write the finish lr to merge-finished-file, to mark the merged files
+	mergeFinisedLogRecord := &data.LogRecord{
+		Key:   []byte(MergeFinishedFileKey),
+		Value: []byte(strconv.Itoa(int(nonMergeFileId))),
+	}
+	encMergeFinishedLogRecord, _ := data.EncodeLogRecord(mergeFinisedLogRecord)
+
+	if err := mergeFinishedFile.Write(encMergeFinishedLogRecord); err != nil {
+		return err
+	}
+
+	if err := mergeFinishedFile.Sync(); err != nil {
+		return err
+	}
 
 	return nil
 }
