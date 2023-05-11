@@ -5,6 +5,7 @@ import (
 	"bitcask-go/index"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,7 +30,7 @@ func Open(options Options) (*DB, error) {
 		return nil, err
 	}
 
-	// if option.dir does not exist, then create it
+	// if option.dir is not exist, then create it
 	if _, err := os.Stat(options.DirPath); os.IsNotExist(err) {
 		if err = os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
 			return nil, err
@@ -44,8 +45,19 @@ func Open(options Options) (*DB, error) {
 		index:      index.NewIndexer(index.IndexType(options.IndexType)),
 	}
 
+	// load merge files
+	// if merge-finished-file exists, replace related old data files with merged ones
+	if err := db.loadMergeFiles(); err != nil {
+		return nil, err
+	}
+
 	// load data files
 	if err := db.LoadDataFiles(); err != nil {
+		return nil, err
+	}
+
+	// load index from hint file
+	if err := db.loadIndexFromHintFile(); err != nil {
 		return nil, err
 	}
 
@@ -62,6 +74,18 @@ func (db *DB) LoadIndexFromDataFiles() error {
 	// if database is empty
 	if len(db.fileIds) == 0 {
 		return nil
+	}
+
+	// if merge has happened
+	hasMerged, nonMergeFileId := false, uint32(0)
+	mergeFinishedFileName := filepath.Join(db.options.DirPath, data.MergeFinishedFileName)
+	if _, err := os.Stat(mergeFinishedFileName); err == nil {
+		nonMergeFid, err := db.getNonMergeFileId(db.options.DirPath)
+		if err != nil {
+			return err
+		}
+		hasMerged = true
+		nonMergeFileId = nonMergeFid
 	}
 
 	updataIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
@@ -83,6 +107,12 @@ func (db *DB) LoadIndexFromDataFiles() error {
 	for i, fid := range db.fileIds {
 		// get data file
 		var fileId = uint32(fid)
+
+		// if hasMerged && fileId < nonMergeFileId, that means already loaded (db.loadIndexFromHintFile)
+		if hasMerged && fileId < nonMergeFileId {
+			continue
+		}
+
 		var dataFile *data.DataFile
 
 		if fileId == db.activeFile.FileId {
@@ -442,5 +472,3 @@ func (db *DB) Sync() error {
 
 	return db.activeFile.Sync()
 }
-
-// todo : 12-3700

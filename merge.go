@@ -168,7 +168,7 @@ func (db *DB) getMergePath() string {
 func (db *DB) loadMergeFiles() error {
 	mergePath := db.getMergePath()
 
-	// if mergePath does not exist, return nil
+	// if mergePath is not exist, return nil
 	if _, err := os.Stat(mergePath); os.IsNotExist(err) {
 		return nil
 	}
@@ -245,4 +245,40 @@ func (db *DB) getNonMergeFileId(dirPath string) (uint32, error) {
 	}
 
 	return uint32(nonMergeFileId), nil
+}
+
+// load index from hint file
+func (db *DB) loadIndexFromHintFile() error {
+	hintFileName := filepath.Join(db.options.DirPath, data.HintFileName)
+	// if hint file is not exitst, return nil
+	if _, err := os.Stat(hintFileName); os.IsNotExist(err) {
+		return nil
+	}
+
+	// open hint file
+	hintFile, err := data.OpenHintFile(hintFileName)
+	if err != nil {
+		return err
+	}
+
+	// load index
+	var offset int64 = 0
+	for {
+		logRecord, size, err := hintFile.ReadLogRecord(offset)
+
+		// err happens, include to the end of the file
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		// decode pos from log record's value
+		pos := data.DeCodeLogRecordPos(logRecord.Value)
+
+		db.index.Put(logRecord.Key, pos)
+
+		offset += size
+	}
 }
