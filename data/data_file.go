@@ -26,7 +26,7 @@ type DataFile struct {
 }
 
 func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
-	fileName := filepath.Join(path_dir, fmt.Sprintf("%09d", file_id)+DataFileNameSuffix)
+	fileName := GetDataFileName(path_dir, file_id)
 	return newDataFile(fileName, file_id)
 }
 
@@ -38,6 +38,11 @@ func OpenHintFile(path string) (*DataFile, error) {
 func OpenMergeFinishedFile(path string) (*DataFile, error) {
 	fileName := filepath.Join(path, MergeFinishedFileName)
 	return newDataFile(fileName, 0)
+}
+
+// params: dir_path, file_id ; return: file_name
+func GetDataFileName(path_dir string, file_id uint32) string {
+	return filepath.Join(path_dir, fmt.Sprintf("%09d", file_id)+DataFileNameSuffix)
 }
 
 func newDataFile(fileName string, fileId uint32) (*DataFile, error) {

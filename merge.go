@@ -144,6 +144,8 @@ func (db *DB) Merge() error {
 	}
 	encMergeFinishedLogRecord, _ := data.EncodeLogRecord(mergeFinisedLogRecord)
 
+	// the mergeFinishedFile only have one log record to record nonMergeFileId,
+	// that will be used in loadMergeFiles when setting up db
 	if err := mergeFinishedFile.Write(encMergeFinishedLogRecord); err != nil {
 		return err
 	}
@@ -160,4 +162,75 @@ func (db *DB) getMergePath() string {
 	curDir := path.Dir(path.Clean(db.options.DirPath))
 	curBase := path.Base(db.options.DirPath)
 	return filepath.Join(curDir, curBase+MergeDirSuffix)
+}
+
+// when set up db
+func (db *DB) loadMergeFiles() error {
+	mergePath := db.getMergePath()
+
+	// if mergePath does not exist, return nil
+	if _, err := os.Stat(mergePath); os.IsNotExist(err) {
+		return nil
+	}
+
+	defer func() {
+		_ = os.RemoveAll(mergePath)
+	}()
+
+	dirEntries, err := os.ReadDir(mergePath)
+	if err != nil {
+		return err
+	}
+
+	// first, check merge-finished-file
+	var mergeFinished bool = false
+	for _, entry := range dirEntries {
+		if entry.Name() == data.MergeFinishedFileName {
+			mergeFinished = true
+		}
+	}
+
+	// if mergeFinished = false, return nil
+	if !mergeFinished {
+		return nil
+	}
+
+	// if mergeFinished = true, replace the orgin data files(fileId < nonMergeFileId) with the merge files
+	nonMergeFileId, err := db.getNonMergeFileId(mergePath)
+	if err != nil {
+		return nil
+	}
+
+	// delete orgin data files(fileId < nonMergeFileId)
+	var fileId uint32 = 0
+	for ; fileId < nonMergeFileId; fileId++ {
+		fileName := data.GetDataFileName(db.options.DirPath, fileId)
+		if _, err := os.Stat(fileName); err == nil {
+			if err := os.Remove(fileName); err != nil {
+				return err
+			}
+		}
+	}
+
+}
+
+func (db *DB) getNonMergeFileId(dirPath string) (uint32, error) {
+	mergeFinishFile, err := data.OpenMergeFinishedFile(dirPath)
+	if err != nil {
+		return 0, nil
+	}
+
+	// because only one log record, offset = 0
+	record, _, err := mergeFinishFile.ReadLogRecord(0)
+	if err != nil {
+		return 0, nil
+	}
+
+	// get the id from record
+	nonMergeFileId, err := strconv.Atoi(string(record.Value))
+	if err != nil {
+		return 0, nil
+	}
+
+	return uint32(nonMergeFileId), nil
 }

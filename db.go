@@ -442,3 +442,5 @@ func (db *DB) Sync() error {
 
 	return db.activeFile.Sync()
 }
+
+// todo : 12-3700
