@@ -184,10 +184,12 @@ func (db *DB) loadMergeFiles() error {
 
 	// first, check merge-finished-file
 	var mergeFinished bool = false
+	var mergeFileNames []string // when replacing, save cpu-time
 	for _, entry := range dirEntries {
 		if entry.Name() == data.MergeFinishedFileName {
 			mergeFinished = true
 		}
+		mergeFileNames = append(mergeFileNames, entry.Name())
 	}
 
 	// if mergeFinished = false, return nil
@@ -212,6 +214,16 @@ func (db *DB) loadMergeFiles() error {
 		}
 	}
 
+	// move merge files to data-file-dir
+	for _, fileName := range mergeFileNames {
+		srcPath := filepath.Join(mergePath, fileName)
+		dstPath := filepath.Join(db.options.DirPath, fileName)
+		if err := os.Rename(srcPath, dstPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (db *DB) getNonMergeFileId(dirPath string) (uint32, error) {
