@@ -30,7 +30,7 @@ func Open(options Options) (*DB, error) {
 		return nil, err
 	}
 
-	// if option.dir is not exist, then create it
+	// if option.dir does not exist, then create it
 	if _, err := os.Stat(options.DirPath); os.IsNotExist(err) {
 		if err = os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
 			return nil, err
@@ -269,7 +269,7 @@ func (db *DB) AppendLogRecordWithLock(log_record *data.LogRecord) (*data.LogReco
 }
 
 func (db *DB) AppendLogRecord(log_record *data.LogRecord) (*data.LogRecordPos, error) {
-	//judge whether active data file is exist
+	//judge whether active data file exists
 	// if nil, than initialize the active file
 	if db.activeFile == nil {
 		err := db.SetActiveDataFile()
@@ -354,12 +354,12 @@ func (db *DB) Delete(key []byte) error {
 		return ErrKeyIsEmpty
 	}
 
-	// whether the key is exist
+	// whether the key exists
 	if pos := db.index.Get(key); pos == nil {
 		return nil
 	}
 
-	// if exist, create a delete record
+	// if exists, create a delete record
 	logRecord := &data.LogRecord{
 		Key:  logRecordKeyWithSeq(key, noTransactionSeqNo),
 		Type: data.LogRecordDeleted,

@@ -45,7 +45,7 @@ func (writeBatch *WriteBatch) Put(key []byte, value []byte) error {
 	return nil
 }
 
-// delete kv in index/batch, if key exist, add deleted-type log record
+// delete kv in index/batch, if key exists, add deleted-type log record
 func (writeBatch *WriteBatch) Delete(key []byte) error {
 	if len(key) == 0 {
 		return ErrKeyIsEmpty
@@ -56,7 +56,7 @@ func (writeBatch *WriteBatch) Delete(key []byte) error {
 	lrp := writeBatch.db.index.Get(key)
 	// if key is not found in index
 	if lrp == nil {
-		// if key exist in batch, delete it directly
+		// if key exists in batch, delete it directly
 		if writeBatch.pendingWrites[string(key)] != nil {
 			delete(writeBatch.pendingWrites, string(key))
 		}

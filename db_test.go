@@ -106,7 +106,7 @@ func TestDB_Get(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, val1)
 
-	// case2: get a record which the key is not exist
+	// case2: get a record which the key does not exist
 	val2, err := db.Get([]byte("some key unknown"))
 	assert.Nil(t, val2)
 	assert.Equal(t, ErrKeyNotFound, err)

@@ -69,7 +69,7 @@ func (bt *BTree) Iterator(reverse bool) Iterator {
 type btreeIterator struct {
 	curIndex int     // current index number
 	reverse  bool    // support reverse traversal
-	values   []*Item // key + pos
+	values   []*Item // snapshot for the index, one Item includes key + pos
 }
 
 // new btree iterator

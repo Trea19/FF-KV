@@ -168,7 +168,7 @@ func (db *DB) getMergePath() string {
 func (db *DB) loadMergeFiles() error {
 	mergePath := db.getMergePath()
 
-	// if mergePath is not exist, return nil
+	// if mergePath does not exist, return nil
 	if _, err := os.Stat(mergePath); os.IsNotExist(err) {
 		return nil
 	}
