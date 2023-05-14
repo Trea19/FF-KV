@@ -18,8 +18,8 @@
 
 ```go
 type logRecord struct {
-	Key []byte,
-	Value []byte,
+    Key []byte,
+    Value []byte,
     Type logRecordType(LogRecordNormal/LogRecordDeleted/etc.)
 }
 ```
@@ -54,7 +54,7 @@ type logRecordPos struct {
 - [x] delete index-node[key]
 - [x] iterator (specifying prefixes and reverse traversal are supported)
 - [x] B-tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
-- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: )
+- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: https://github.com/plar/go-adaptive-radix-tree)
 - [x] produce hintfile (after merging)
 
 **Data Files**
