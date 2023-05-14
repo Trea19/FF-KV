@@ -41,7 +41,7 @@ type logRecord struct {
 
 ```go
 // index node: <key []byte, pos *logRecordPos>
-// when put kv, append log record to active data file before updating index
+// when put/delete kv, append log record to active data file before updating index
 
 type logRecordPos struct {
     Fid uint32,
