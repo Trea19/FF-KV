@@ -24,10 +24,10 @@ type logRecord struct {
 }
 ```
 
-- [x] options:  user can set db_path/datafile_size/if_sync/index_type
+- [x] options: user can set db_path/datafile_size/if_sync/index_type
 - [x] [Bitcask:Open(opts)] open a new or existing Bitcask datastore
 - [x] [Bitcask:Get(key)] retrieve a value by key from a Bitcask datastore
-- [x] [Bitcask:Put(key, value)]  store a key and value in a Bitcask datastore
+- [x] [Bitcask:Put(key, value)] store a key and value in a Bitcask datastore
 - [x] [Bitcask:Delete(key)] delete a key from a Bitcask datastore
 - [x] [Bitcask:Sync()] force any writes to sync to disk
 - [x] [Bitcask:Close()] close a Bitcask datastore and flush all pending writes to disk
@@ -35,7 +35,6 @@ type logRecord struct {
 - [x] [Bitcask:Fold(function)] fold over all K/V pairs in a Bitcask datastore
 - [x] [Bitcask:Merge(dir)] merge several data files and produce hintfiles for faster startup
 - [x] write batch
-
 
 **Index**
 
@@ -50,12 +49,14 @@ type logRecordPos struct {
 ```
 
 - [x] put logRecordPos to index-node[key]
-- [x] get logRecordPos by key 
+- [x] get logRecordPos by key
 - [x] delete index-node[key]
 - [x] iterator (specifying prefixes and reverse traversal are supported)
-- [x] B-tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
-- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: )
+- [x] B Tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
+- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: https://github.com/plar/go-adaptive-radix-tree)
+- [ ] B+ Tree to store indexes on disk (encapsulates B+ tree:)
 - [x] produce hintfile (after merging)
+- [ ] \*Index lock granularity optimization
 
 **Data Files**
 
@@ -76,10 +77,9 @@ type logRecordPos struct {
 
 **I/O Interface**
 
-
 - [x] encapsulate standard file manipulation API (read/write/sync/close)
-- [ ] mmap
-- [ ] other user-defined file systems
+- [ ] \*mmap
+- [ ] \*other user-defined file systems
 
 **HTTP Interface**
 

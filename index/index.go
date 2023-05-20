@@ -23,15 +23,20 @@ const (
 	Btree IndexType = iota + 1
 	// ARTree
 	ARtree
+	//B+Tree
+	BPlustree
 )
 
-func NewIndexer(typ IndexType) Indexer {
+func NewIndexer(typ IndexType, dirPath string) Indexer {
 	switch typ {
 	case Btree:
 		return NewBtree()
 
 	case ARtree:
-		return nil //todo
+		return NewART()
+
+	case BPlustree:
+		return NewBPlusTree(dirPath)
 
 	default:
 		panic("unsupported index type")

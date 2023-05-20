@@ -46,5 +46,3 @@ var DefaultWriteBatchOptions = WriteBatchOptions{
 	MaxBatchNum: 10000,
 	SyncWrites:  true,
 }
-
-// todo 13-2138
