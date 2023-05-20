@@ -18,8 +18,8 @@
 
 ```go
 type logRecord struct {
-	Key []byte,
-	Value []byte,
+    Key []byte,
+    Value []byte,
     Type logRecordType(LogRecordNormal/LogRecordDeleted/etc.)
 }
 ```
@@ -40,7 +40,7 @@ type logRecord struct {
 
 ```go
 // index node: <key []byte, pos *logRecordPos>
-// when put kv, append log record to active data file before updating index
+// when put/delete kv, append log record to active data file before updating index
 
 type logRecordPos struct {
     Fid uint32,
@@ -52,9 +52,14 @@ type logRecordPos struct {
 - [x] get logRecordPos by key
 - [x] delete index-node[key]
 - [x] iterator (specifying prefixes and reverse traversal are supported)
+<<<<<<< HEAD
 - [x] B Tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
 - [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: https://github.com/plar/go-adaptive-radix-tree)
 - [ ] B+ Tree to store indexes on disk (encapsulates B+ tree:)
+=======
+- [x] B-tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
+- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: https://github.com/plar/go-adaptive-radix-tree)
+>>>>>>> 7a294a98efd96f6279020da060d60e2e36a11eeb
 - [x] produce hintfile (after merging)
 - [ ] \*Index lock granularity optimization
 
