@@ -42,7 +42,7 @@ func Open(options Options) (*DB, error) {
 		options:    options,
 		mu:         new(sync.RWMutex),
 		olderFiles: make(map[uint32]*data.DataFile),
-		index:      index.NewIndexer(index.IndexType(options.IndexType)),
+		index:      index.NewIndexer(int8(options.IndexType), options.DirPath),
 	}
 
 	// load merge files

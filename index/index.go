@@ -24,7 +24,7 @@ const (
 	// ARTree
 	ARtree
 	//B+Tree
-	BPlustree
+	BPtree
 )
 
 func NewIndexer(typ IndexType, dirPath string) Indexer {
@@ -35,7 +35,7 @@ func NewIndexer(typ IndexType, dirPath string) Indexer {
 	case ARtree:
 		return NewART()
 
-	case BPlustree:
+	case BPtree:
 		return NewBPlusTree(dirPath)
 
 	default:

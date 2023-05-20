@@ -27,6 +27,7 @@ type WriteBatchOptions struct {
 const (
 	Btree IndexerType = iota + 1
 	ARtree
+	BPtree
 )
 
 // for example

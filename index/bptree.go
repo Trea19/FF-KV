@@ -16,6 +16,7 @@ type BPlusTree struct {
 }
 
 func NewBPlusTree(dirPath string) *BPlusTree {
+	// todo 13-10003
 	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), 0644, nil)
 	if err != nil {
 		panic("failed to open bptree")
@@ -88,5 +89,71 @@ func (bpt *BPlusTree) Size() int {
 }
 
 func (bpt *BPlusTree) Iterator(reverse bool) Iterator {
+	return newBPlusTreeIterator(bpt.tree, reverse)
+}
 
+type bptreeIterator struct {
+	tx      *bbolt.Tx
+	cursor  *bbolt.Cursor
+	reverse bool
+	curKey  []byte
+	curVal  []byte
+}
+
+func newBPlusTreeIterator(tree *bbolt.DB, reverse bool) *bptreeIterator {
+	tx, err := tree.Begin(false)
+	if err != nil {
+		panic("failed to begin a transaction in bptreeIterator")
+	}
+	bpti := &bptreeIterator{
+		tx:      tx,
+		cursor:  tx.Bucket(indexBucketName).Cursor(),
+		reverse: reverse,
+	}
+	bpti.Rewind()
+
+	return bpti
+}
+
+// go back to the first data of iterator
+func (bpti *bptreeIterator) Rewind() {
+	if bpti.reverse {
+		bpti.curKey, bpti.curVal = bpti.cursor.Last()
+	} else {
+		bpti.curKey, bpti.curVal = bpti.cursor.First()
+	}
+}
+
+// find the first target key which is >= or <= params-key, and start traversing from target key
+func (bpti *bptreeIterator) Seek(key []byte) {
+	bpti.curKey, bpti.curVal = bpti.cursor.Seek(key)
+}
+
+// jump to the next key
+func (bpti *bptreeIterator) Next() {
+	if bpti.reverse {
+		bpti.curKey, bpti.curVal = bpti.cursor.Prev()
+	} else {
+		bpti.curKey, bpti.curVal = bpti.cursor.Next()
+	}
+}
+
+// used to determine whether the traversal has been completed
+func (bpti *bptreeIterator) Valid() bool {
+	return len(bpti.curKey) != 0
+}
+
+// get key of current postion
+func (bpti *bptreeIterator) Key() []byte {
+	return bpti.curKey
+}
+
+// get value of current positon
+func (bpti *bptreeIterator) Value() *data.LogRecordPos {
+	return data.DeCodeLogRecordPos(bpti.curVal)
+}
+
+// close iterator and release resources
+func (bpti *bptreeIterator) Close() {
+	_ = bpti.tx.Rollback()
 }
