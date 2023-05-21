@@ -42,7 +42,7 @@ func Open(options Options) (*DB, error) {
 		options:    options,
 		mu:         new(sync.RWMutex),
 		olderFiles: make(map[uint32]*data.DataFile),
-		index:      index.NewIndexer(int8(options.IndexType), options.DirPath),
+		index:      index.NewIndexer(int8(options.IndexType), options.DirPath, options.SyncWrites),
 	}
 
 	// load merge files
@@ -56,14 +56,17 @@ func Open(options Options) (*DB, error) {
 		return nil, err
 	}
 
-	// load index from hint file
-	if err := db.loadIndexFromHintFile(); err != nil {
-		return nil, err
-	}
+	// B+ Tree in the disk, do not need to load index from data files
+	if options.IndexType != BPtree {
+		// load index from hint file
+		if err := db.loadIndexFromHintFile(); err != nil {
+			return nil, err
+		}
 
-	// load index of the datafiles
-	if err := db.LoadIndexFromDataFiles(); err != nil {
-		return nil, err
+		// load index of the datafiles
+		if err := db.LoadIndexFromDataFiles(); err != nil {
+			return nil, err
+		}
 	}
 
 	return db, nil
@@ -448,6 +451,8 @@ func (db *DB) Close() error {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	// save seqNo
 
 	// close active file
 	if err := db.activeFile.Close(); err != nil {

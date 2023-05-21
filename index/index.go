@@ -27,7 +27,7 @@ const (
 	BPtree
 )
 
-func NewIndexer(typ IndexType, dirPath string) Indexer {
+func NewIndexer(typ IndexType, dirPath string, sync bool) Indexer {
 	switch typ {
 	case Btree:
 		return NewBtree()
@@ -36,7 +36,7 @@ func NewIndexer(typ IndexType, dirPath string) Indexer {
 		return NewART()
 
 	case BPtree:
-		return NewBPlusTree(dirPath)
+		return NewBPlusTree(dirPath, sync)
 
 	default:
 		panic("unsupported index type")

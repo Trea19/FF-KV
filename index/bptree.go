@@ -15,8 +15,9 @@ type BPlusTree struct {
 	tree *bbolt.DB
 }
 
-func NewBPlusTree(dirPath string) *BPlusTree {
-	// todo 13-10003
+func NewBPlusTree(dirPath string, syncWrites bool) *BPlusTree {
+	opt := bbolt.DefaultOptions
+	opt.NoSync = !syncWrites
 	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), 0644, nil)
 	if err != nil {
 		panic("failed to open bptree")
