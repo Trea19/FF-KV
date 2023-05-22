@@ -12,15 +12,18 @@ import (
 	"sync"
 )
 
+const seqNoKey = "seqNoKey"
+
 type DB struct {
-	options    Options
-	mu         *sync.RWMutex
-	fileIds    []int                     // only for loading index from data files
-	activeFile *data.DataFile            //current active file, append log_record
-	olderFiles map[uint32]*data.DataFile //order files, read only
-	index      index.Indexer
-	seqNo      uint64 // id for transaction, global variable,  ++
-	isMerging  bool   // if db is merging
+	options         Options
+	mu              *sync.RWMutex
+	fileIds         []int                     // only for loading index from data files
+	activeFile      *data.DataFile            //current active file, append log_record
+	olderFiles      map[uint32]*data.DataFile //order files, read only
+	index           index.Indexer
+	seqNo           uint64 // id for transaction, global variable,  ++
+	isMerging       bool   // if db is merging
+	seqNoFileExists bool
 }
 
 // open the bitcask-db instance
@@ -67,6 +70,8 @@ func Open(options Options) (*DB, error) {
 		if err := db.LoadIndexFromDataFiles(); err != nil {
 			return nil, err
 		}
+	} else { // B+ Tree
+
 	}
 
 	return db, nil
@@ -453,6 +458,23 @@ func (db *DB) Close() error {
 	defer db.mu.Unlock()
 
 	// save seqNo
+	seqNoFile, err := data.OpenSeqNoFile(db.options.DirPath)
+	if err != nil {
+		return err
+	}
+
+	record := &data.LogRecord{
+		Key:   []byte(seqNoKey),
+		Value: []byte(strconv.FormatUint(db.seqNo, 10)),
+	}
+
+	encRecord, _ := data.EncodeLogRecord(record)
+	if err := seqNoFile.Write(encRecord); err != nil {
+		return err
+	}
+	if err := seqNoFile.Sync(); err != nil {
+		return err
+	}
 
 	// close active file
 	if err := db.activeFile.Close(); err != nil {
@@ -476,4 +498,31 @@ func (db *DB) Sync() error {
 	defer db.mu.Unlock()
 
 	return db.activeFile.Sync()
+}
+
+func (db *DB) loadSeqNo() error {
+	fileName := filepath.Join(db.options.DirPath, data.SeqNoFileName)
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		return nil
+	}
+
+	seqNoFile, err := data.OpenSeqNoFile(fileName)
+	if err != nil {
+		return err
+	}
+
+	record, _, err := seqNoFile.ReadLogRecord(0)
+	if err != nil {
+		return err
+	}
+
+	seqNo, err := strconv.ParseUint(string(record.Value), 10, 64)
+	if err != nil {
+		return err
+	}
+
+	db.seqNo = seqNo
+	db.seqNoFileExists = true
+
+	return nil
 }
