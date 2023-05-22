@@ -159,9 +159,9 @@ func (db *DB) Merge() error {
 
 // merge dir level e.g. /tmp/bitcask VS /tmp/bitcask-merge
 func (db *DB) getMergePath() string {
-	curDir := path.Dir(path.Clean(db.options.DirPath))
-	curBase := path.Base(db.options.DirPath)
-	return filepath.Join(curDir, curBase+MergeDirSuffix)
+	dir := path.Dir(path.Clean(db.options.DirPath))
+	base := path.Base(db.options.DirPath)
+	return filepath.Join(dir, base+MergeDirSuffix)
 }
 
 // when set up db
@@ -183,11 +183,14 @@ func (db *DB) loadMergeFiles() error {
 	}
 
 	// first, check merge-finished-file
-	var mergeFinished bool = false
+	var mergeFinished bool
 	var mergeFileNames []string // when replacing, save cpu-time
 	for _, entry := range dirEntries {
 		if entry.Name() == data.MergeFinishedFileName {
 			mergeFinished = true
+		}
+		if entry.Name() == data.SeqNoFileName {
+			continue
 		}
 		mergeFileNames = append(mergeFileNames, entry.Name())
 	}

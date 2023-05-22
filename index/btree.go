@@ -65,6 +65,10 @@ func (bt *BTree) Iterator(reverse bool) Iterator {
 	return NewBtreeIterator(bt.tree, reverse)
 }
 
+func (bt *BTree) Close() error {
+	return nil
+}
+
 // btree's index iterator
 type btreeIterator struct {
 	curIndex int     // current index number

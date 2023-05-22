@@ -14,6 +14,7 @@ type Indexer interface {
 	Delete(key []byte) bool
 	Iterator(reverse bool) Iterator
 	Size() int
+	Close() error
 }
 
 type IndexType = int8

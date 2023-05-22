@@ -18,7 +18,7 @@ type BPlusTree struct {
 func NewBPlusTree(dirPath string, syncWrites bool) *BPlusTree {
 	opt := bbolt.DefaultOptions
 	opt.NoSync = !syncWrites
-	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), 0644, nil)
+	bptree, err := bbolt.Open(filepath.Join(dirPath, bptreeIndexFileName), 0644, opt)
 	if err != nil {
 		panic("failed to open bptree")
 	}
@@ -87,6 +87,10 @@ func (bpt *BPlusTree) Size() int {
 		panic("failed to get size in bptree")
 	}
 	return size
+}
+
+func (bpt *BPlusTree) Close() error {
+	return bpt.tree.Close()
 }
 
 func (bpt *BPlusTree) Iterator(reverse bool) Iterator {

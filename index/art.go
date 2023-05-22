@@ -59,6 +59,10 @@ func (art *AdaptiveRadixTree) Size() int {
 	return size
 }
 
+func (art *AdaptiveRadixTree) Close() error {
+	return nil
+}
+
 func (art *AdaptiveRadixTree) Iterator(reverse bool) Iterator {
 	if art == nil {
 		return nil

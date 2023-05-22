@@ -20,6 +20,9 @@ type WriteBatch struct {
 
 // initialize write batch
 func (db *DB) NewWriteBatch(opts WriteBatchOptions) *WriteBatch {
+	if db.options.IndexType == BPtree && !db.seqNoFileExists && !db.isInitial {
+		panic("cannot use write batch in bptree, seq No file does not exitst.")
+	}
 	return &WriteBatch{
 		opts:          opts,
 		mu:            new(sync.Mutex),
@@ -118,7 +121,7 @@ func (writeBatch *WriteBatch) Commit() error {
 	}
 
 	// if opts.sync == true && active file != nil, then sync
-	if writeBatch.opts.SyncWrites == true && writeBatch.db.activeFile != nil {
+	if writeBatch.opts.SyncWrites && writeBatch.db.activeFile != nil {
 		if err := writeBatch.db.activeFile.Sync(); err != nil {
 			return err
 		}

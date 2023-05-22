@@ -71,9 +71,10 @@ func TestBPlusTree_Size(t *testing.T) {
 	path := filepath.Join(os.TempDir(), "bptree-size")
 	_ = os.MkdirAll(path, os.ModePerm)
 	defer func() {
-		_ = os.Remove(path)
+		_ = os.RemoveAll(path)
 	}()
 	tree := NewBPlusTree(path, false)
+	defer tree.Close()
 
 	assert.Equal(t, 0, tree.Size())
 

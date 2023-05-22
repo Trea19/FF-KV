@@ -24,6 +24,7 @@ type DB struct {
 	seqNo           uint64 // id for transaction, global variable,  ++
 	isMerging       bool   // if db is merging
 	seqNoFileExists bool
+	isInitial       bool // first time to set up
 }
 
 // open the bitcask-db instance
@@ -33,11 +34,21 @@ func Open(options Options) (*DB, error) {
 		return nil, err
 	}
 
+	var isInitial bool
 	// if option.dir does not exist, then create it
 	if _, err := os.Stat(options.DirPath); os.IsNotExist(err) {
+		isInitial = true
 		if err = os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
 			return nil, err
 		}
+	}
+	// dir exists, but no data file, isInitial = true
+	entries, err := os.ReadDir(options.DirPath)
+	if err != nil {
+		return nil, err
+	}
+	if len(entries) == 0 {
+		isInitial = true
 	}
 
 	// initialize DB struct
@@ -46,6 +57,7 @@ func Open(options Options) (*DB, error) {
 		mu:         new(sync.RWMutex),
 		olderFiles: make(map[uint32]*data.DataFile),
 		index:      index.NewIndexer(int8(options.IndexType), options.DirPath, options.SyncWrites),
+		isInitial:  isInitial,
 	}
 
 	// load merge files
@@ -71,7 +83,17 @@ func Open(options Options) (*DB, error) {
 			return nil, err
 		}
 	} else { // B+ Tree
+		if err := db.loadSeqNo(); err != nil {
+			return nil, err
+		}
 
+		if db.activeFile != nil {
+			size, err := db.activeFile.IOManager.Size()
+			if err != nil {
+				return nil, err
+			}
+			db.activeFile.WriteOff = size
+		}
 	}
 
 	return db, nil
@@ -418,8 +440,12 @@ func (db *DB) getValueByPosition(lrp *data.LogRecordPos) ([]byte, error) {
 
 // get all keys in index
 func (db *DB) ListKeys() [][]byte {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	it := db.index.Iterator(false)
 	defer it.Close()
+
 	keys := make([][]byte, db.index.Size())
 	var idx int
 	for it.Rewind(); it.Valid(); it.Next() {
@@ -456,6 +482,11 @@ func (db *DB) Close() error {
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	// close index (B+ tree, as we capsulates a db instance)
+	if err := db.index.Close(); err != nil {
+		return err
+	}
 
 	// save seqNo
 	seqNoFile, err := data.OpenSeqNoFile(db.options.DirPath)
@@ -524,5 +555,5 @@ func (db *DB) loadSeqNo() error {
 	db.seqNo = seqNo
 	db.seqNoFileExists = true
 
-	return nil
+	return os.Remove(fileName)
 }
