@@ -3,6 +3,7 @@ package bitcaskminidb
 import (
 	"bitcask-go/data"
 	"bitcask-go/index"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,9 +11,14 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/gofrs/flock"
 )
 
-const seqNoKey = "seqNoKey"
+const (
+	seqNoKey     = "seqNoKey"
+	fileLockName = "flock"
+)
 
 type DB struct {
 	options         Options
@@ -24,7 +30,8 @@ type DB struct {
 	seqNo           uint64 // id for transaction, global variable,  ++
 	isMerging       bool   // if db is merging
 	seqNoFileExists bool
-	isInitial       bool // first time to set up
+	isInitial       bool         // first time to set up
+	flock           *flock.Flock // ensure mutual exclusion between multiple processes
 }
 
 // open the bitcask-db instance
@@ -42,6 +49,18 @@ func Open(options Options) (*DB, error) {
 			return nil, err
 		}
 	}
+
+	// try to get flock, cz only one process can use the db at one time
+	fileLock := flock.New(filepath.Join(options.DirPath, fileLockName))
+	hold, err := fileLock.TryLock()
+	if err != nil {
+		return nil, err
+	}
+	// if the db is being used by other process
+	if !hold {
+		return nil, ErrDatabaseIsBeingUsed
+	}
+
 	// dir exists, but no data file, isInitial = true
 	entries, err := os.ReadDir(options.DirPath)
 	if err != nil {
@@ -58,6 +77,7 @@ func Open(options Options) (*DB, error) {
 		olderFiles: make(map[uint32]*data.DataFile),
 		index:      index.NewIndexer(int8(options.IndexType), options.DirPath, options.SyncWrites),
 		isInitial:  isInitial,
+		flock:      fileLock,
 	}
 
 	// load merge files
@@ -477,6 +497,16 @@ func (db *DB) Fold(fn func(key []byte, value []byte) bool) error {
 
 // close database
 func (db *DB) Close() error {
+	// unlock flock
+	defer func() {
+		if err := db.flock.Unlock(); err != nil {
+			panic(fmt.Sprintf("failed to unlock the directory, %v", err))
+		}
+		if err := db.flock.Close(); err != nil {
+			panic("failed to close flock")
+		}
+	}()
+
 	if db.activeFile == nil {
 		return nil
 	}

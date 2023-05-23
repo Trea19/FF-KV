@@ -35,7 +35,7 @@ var DefaultOptions = Options{
 	DirPath:      os.TempDir(),
 	DataFileSize: 256 * 1024 * 1024, //256MB
 	SyncWrites:   false,
-	IndexType:    Btree,
+	IndexType:    ARtree,
 }
 
 var DefaultIteratorOptions = IteratorOptions{

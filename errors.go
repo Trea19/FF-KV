@@ -17,4 +17,6 @@ var (
 	ErrExceedMaxBatchNum = errors.New("exceed the max batch num")
 	//merge
 	ErrMergeIsInProgress = errors.New("merge is in progress, plz try it later")
+	//flock
+	ErrDatabaseIsBeingUsed = errors.New("the database directory is used by another process")
 )

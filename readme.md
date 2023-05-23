@@ -78,8 +78,10 @@ type logRecordPos struct {
 **I/O Interface**
 
 - [x] encapsulate standard file manipulation API (read/write/sync/close)
-- [ ] \*mmap
-- [ ] \*other user-defined file systems
+- [ ] use mmap when open db
+- [ ] flock
+- [ ] sync strategy (x bytes/sync)
+- [ ] *WAL-like format (read by block)
 
 **HTTP Interface**
 
