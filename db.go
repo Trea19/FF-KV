@@ -507,6 +507,11 @@ func (db *DB) Close() error {
 		return err
 	}
 
+	// close seq no file
+	if err := seqNoFile.Close(); err != nil {
+		return err
+	}
+
 	// close active file
 	if err := db.activeFile.Close(); err != nil {
 		return err
@@ -554,6 +559,10 @@ func (db *DB) loadSeqNo() error {
 
 	db.seqNo = seqNo
 	db.seqNoFileExists = true
+
+	if err := seqNoFile.Close(); err != nil {
+		return err
+	}
 
 	return os.Remove(fileName)
 }

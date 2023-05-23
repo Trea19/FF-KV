@@ -52,9 +52,9 @@ type logRecordPos struct {
 - [x] get logRecordPos by key
 - [x] delete index-node[key]
 - [x] iterator (specifying prefixes and reverse traversal are supported)
-- [x] B Tree to store indexes in memory (encapsulates B-tree: https://github.com/google/btree)
-- [x] Adaptive Radix Tree to store indexes in memory (encapsulates ART: https://github.com/plar/go-adaptive-radix-tree)
-- [ ] B+ Tree to store indexes on disk (encapsulates B+ tree:)
+- [x] B Tree to store indexes in memory 
+- [x] Adaptive Radix Tree to store indexes in memory
+- [x] B+ Tree to store indexes on disk (encapsulates B+ tree:)
 - [x] produce hintfile (after merging)
 - [ ] \*Index lock granularity optimization
 
@@ -84,3 +84,7 @@ type logRecordPos struct {
 **HTTP Interface**
 
 to be continued :)
+
+
+
+![fixed-all-bugs](/imgs/test5.23.png)

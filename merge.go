@@ -160,7 +160,7 @@ func (db *DB) Merge() error {
 // merge dir level e.g. /tmp/bitcask VS /tmp/bitcask-merge
 func (db *DB) getMergePath() string {
 	dir := path.Dir(path.Clean(db.options.DirPath))
-	base := path.Base(db.options.DirPath)
+	base := filepath.Base(db.options.DirPath)
 	return filepath.Join(dir, base+MergeDirSuffix)
 }
 
