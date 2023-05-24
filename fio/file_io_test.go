@@ -90,6 +90,4 @@ func TestFileIO_Close(t *testing.T) {
 
 	err = fio.Close()
 	assert.Nil(t, err)
-
-	fio.Close()
 }

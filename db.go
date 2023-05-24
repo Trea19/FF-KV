@@ -515,16 +515,16 @@ func (db *DB) Close() error {
 		}
 	}()
 
+	// close index (B+ tree, as we capsulates a db instance)
+	if err := db.index.Close(); err != nil {
+		return err
+	}
+
 	if db.activeFile == nil {
 		return nil
 	}
 	db.mu.Lock()
 	defer db.mu.Unlock()
-
-	// close index (B+ tree, as we capsulates a db instance)
-	if err := db.index.Close(); err != nil {
-		return err
-	}
 
 	// save seqNo
 	seqNoFile, err := data.OpenSeqNoFile(db.options.DirPath)
@@ -580,7 +580,7 @@ func (db *DB) loadSeqNo() error {
 		return nil
 	}
 
-	seqNoFile, err := data.OpenSeqNoFile(fileName)
+	seqNoFile, err := data.OpenSeqNoFile(db.options.DirPath)
 	if err != nil {
 		return err
 	}
