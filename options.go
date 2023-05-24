@@ -5,7 +5,8 @@ import "os"
 type Options struct {
 	DirPath      string
 	DataFileSize int64       // max size of file
-	SyncWrites   bool        // whether sync after write
+	SyncWrites   bool        // whether sync after each write
+	BytesPerSync uint        // after x bytes, sync once
 	IndexType    IndexerType //index type: Btree/ARTree
 }
 
@@ -35,6 +36,7 @@ var DefaultOptions = Options{
 	DirPath:      os.TempDir(),
 	DataFileSize: 256 * 1024 * 1024, //256MB
 	SyncWrites:   false,
+	BytesPerSync: 0,
 	IndexType:    ARtree,
 }
 

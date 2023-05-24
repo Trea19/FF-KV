@@ -32,6 +32,7 @@ type DB struct {
 	seqNoFileExists bool
 	isInitial       bool         // first time to set up
 	flock           *flock.Flock // ensure mutual exclusion between multiple processes
+	bytesWrite      uint         //total number of bytes written
 }
 
 // open the bitcask-db instance
@@ -351,11 +352,18 @@ func (db *DB) AppendLogRecord(log_record *data.LogRecord) (*data.LogRecordPos, e
 		return nil, err
 	}
 
-	// if options of syncwrites == true ...
-	if db.options.SyncWrites {
+	db.bytesWrite += uint(size)
+
+	var needSync = db.options.SyncWrites
+	if !needSync && db.options.BytesPerSync > 0 && db.bytesWrite >= db.options.BytesPerSync {
+		needSync = true
+	}
+
+	if needSync {
 		if err := db.activeFile.Sync(); err != nil {
 			return nil, err
 		}
+		db.bytesWrite = 0 //clear bytesWrite
 	}
 
 	pos := &data.LogRecordPos{Fid: db.activeFile.FileId, Offset: writeOff}

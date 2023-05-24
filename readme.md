@@ -52,7 +52,7 @@ type logRecordPos struct {
 - [x] get logRecordPos by key
 - [x] delete index-node[key]
 - [x] iterator (specifying prefixes and reverse traversal are supported)
-- [x] B Tree to store indexes in memory 
+- [x] B Tree to store indexes in memory
 - [x] Adaptive Radix Tree to store indexes in memory
 - [x] B+ Tree to store indexes on disk (encapsulates B+ tree:)
 - [x] produce hintfile (after merging)
@@ -79,14 +79,12 @@ type logRecordPos struct {
 
 - [x] encapsulate standard file manipulation API (read/write/sync/close)
 - [ ] use mmap when open db
-- [ ] flock
-- [ ] sync strategy (x bytes/sync)
-- [ ] *WAL-like format (read by block)
+- [x] flock
+- [x] sync strategy (x bytes/sync)
+- [ ] \*WAL-like format (read by block)
 
 **HTTP Interface**
 
 to be continued :)
-
-
 
 ![fixed-all-bugs](/imgs/test5.23.png)
