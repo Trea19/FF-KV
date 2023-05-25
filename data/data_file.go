@@ -26,24 +26,24 @@ type DataFile struct {
 	IOManager fio.IOManager // to read/write/sync/close
 }
 
-func OpenDataFile(path_dir string, file_id uint32) (*DataFile, error) {
+func OpenDataFile(path_dir string, file_id uint32, ioType fio.FileIOType) (*DataFile, error) {
 	fileName := GetDataFileName(path_dir, file_id)
-	return newDataFile(fileName, file_id)
+	return newDataFile(fileName, file_id, ioType)
 }
 
 func OpenHintFile(path string) (*DataFile, error) {
 	fileName := filepath.Join(path, HintFileName)
-	return newDataFile(fileName, 0)
+	return newDataFile(fileName, 0, fio.StandardFIO)
 }
 
 func OpenMergeFinishedFile(path string) (*DataFile, error) {
 	fileName := filepath.Join(path, MergeFinishedFileName)
-	return newDataFile(fileName, 0)
+	return newDataFile(fileName, 0, fio.StandardFIO)
 }
 
 func OpenSeqNoFile(path string) (*DataFile, error) {
 	fileName := filepath.Join(path, SeqNoFileName)
-	return newDataFile(fileName, 0)
+	return newDataFile(fileName, 0, fio.StandardFIO)
 }
 
 // params: dir_path, file_id ; return: file_name
@@ -51,9 +51,9 @@ func GetDataFileName(path_dir string, file_id uint32) string {
 	return filepath.Join(path_dir, fmt.Sprintf("%09d", file_id)+DataFileNameSuffix)
 }
 
-func newDataFile(fileName string, fileId uint32) (*DataFile, error) {
+func newDataFile(fileName string, fileId uint32, ioType fio.FileIOType) (*DataFile, error) {
 	// initialize io_manager
-	io_manager, err := fio.NewIOManager(fileName)
+	io_manager, err := fio.NewIOManager(fileName, ioType)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +140,18 @@ func (df *DataFile) Sync() error {
 
 func (df *DataFile) Close() error {
 	return df.IOManager.Close()
+}
+
+func (df *DataFile) SetIOManager(dirPath string, ioType fio.FileIOType) error {
+	if err := df.IOManager.Close(); err != nil {
+		return err
+	}
+	ioManager, err := fio.NewIOManager(GetDataFileName(dirPath, df.FileId), ioType)
+	if err != nil {
+		return err
+	}
+	df.IOManager = ioManager
+	return nil
 }
 
 func (df *DataFile) readNBytes(n int64, offset int64) ([]byte, error) {

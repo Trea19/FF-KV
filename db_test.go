@@ -89,6 +89,7 @@ func TestDB_Put(t *testing.T) {
 
 func TestDB_Get(t *testing.T) {
 	opt := DefaultOptions
+	// opt.MMapAtStartUp = false
 	dir, _ := os.MkdirTemp("", "bitcask-go-get")
 	opt.DirPath = dir
 	opt.DataFileSize = 16 * 1024 * 1024
@@ -327,3 +328,16 @@ func TestDB_FileLock(t *testing.T) {
 	err = db2.Close()
 	assert.Nil(t, err)
 }
+
+// func TestDB_OpenMMap(t *testing.T) {
+// 	opts := DefaultOptions
+// 	opts.DirPath = "/tmp/bitcask-go"
+// 	opts.MMapAtStartUp = false
+
+// 	now := time.Now()
+// 	db, err := Open(opts)
+// 	t.Log("open time ", time.Since(now))
+
+// 	assert.Nil(t, err)
+// 	assert.NotNil(t, db)
+// }

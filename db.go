@@ -2,6 +2,7 @@ package bitcaskminidb
 
 import (
 	"bitcask-go/data"
+	"bitcask-go/fio"
 	"bitcask-go/index"
 	"fmt"
 	"io"
@@ -103,6 +104,14 @@ func Open(options Options) (*DB, error) {
 		if err := db.LoadIndexFromDataFiles(); err != nil {
 			return nil, err
 		}
+
+		// reset ioType from mmap to standard-fio
+		if db.options.MMapAtStartUp {
+			if err := db.resetIOType(); err != nil {
+				return nil, err
+			}
+		}
+
 	} else { // B+ Tree
 		if err := db.loadSeqNo(); err != nil {
 			return nil, err
@@ -256,7 +265,11 @@ func (db *DB) LoadDataFiles() error {
 
 	// iterate the file id, and open them
 	for i, fid := range fileIds {
-		datafile, err := data.OpenDataFile(db.options.DirPath, uint32(fid))
+		ioType := fio.StandardFIO
+		if db.options.MMapAtStartUp {
+			ioType = fio.MemoryMap
+		}
+		datafile, err := data.OpenDataFile(db.options.DirPath, uint32(fid), ioType)
 		if err != nil {
 			return err
 		}
@@ -378,7 +391,7 @@ func (db *DB) SetActiveDataFile() error {
 	}
 
 	// open new data file
-	dataFile, err := data.OpenDataFile(db.options.DirPath, initialFileId)
+	dataFile, err := data.OpenDataFile(db.options.DirPath, initialFileId, fio.StandardFIO)
 
 	if err != nil {
 		return err
@@ -603,4 +616,20 @@ func (db *DB) loadSeqNo() error {
 	}
 
 	return os.Remove(fileName)
+}
+
+func (db *DB) resetIOType() error {
+	if db.activeFile == nil {
+		return nil
+	}
+
+	if err := db.activeFile.SetIOManager(db.options.DirPath, fio.StandardFIO); err != nil {
+		return err
+	}
+	for _, olderFile := range db.olderFiles {
+		if err := olderFile.SetIOManager(db.options.DirPath, fio.StandardFIO); err != nil {
+			return err
+		}
+	}
+	return nil
 }
