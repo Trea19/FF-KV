@@ -3,12 +3,13 @@ package bitcaskminidb
 import "os"
 
 type Options struct {
-	DirPath       string
-	DataFileSize  int64       // max size of file
-	SyncWrites    bool        // whether sync after each write
-	BytesPerSync  uint        // after x bytes, sync once
-	IndexType     IndexerType //index type: Btree/ARTree
-	MMapAtStartUp bool        // if use mmap instead of standard_fio when start up db
+	DirPath            string
+	DataFileSize       int64       // max size of file
+	SyncWrites         bool        // whether sync after each write
+	BytesPerSync       uint        // after x bytes, sync once
+	IndexType          IndexerType //index type: Btree/ARTree
+	MMapAtStartUp      bool        // if use mmap instead of standard_fio when start up db
+	DataFileMergeRatio float32
 }
 
 type IndexerType int8
@@ -34,12 +35,13 @@ const (
 
 // for example
 var DefaultOptions = Options{
-	DirPath:       os.TempDir(),
-	DataFileSize:  256 * 1024 * 1024, //256MB
-	SyncWrites:    false,
-	BytesPerSync:  0,
-	IndexType:     Btree,
-	MMapAtStartUp: true,
+	DirPath:            os.TempDir(),
+	DataFileSize:       256 * 1024 * 1024, //256MB
+	SyncWrites:         false,
+	BytesPerSync:       0,
+	IndexType:          Btree,
+	MMapAtStartUp:      true,
+	DataFileMergeRatio: 0.5,
 }
 
 var DefaultIteratorOptions = IteratorOptions{

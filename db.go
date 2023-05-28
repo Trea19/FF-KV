@@ -4,6 +4,7 @@ import (
 	"bitcask-go/data"
 	"bitcask-go/fio"
 	"bitcask-go/index"
+	"bitcask-go/utils"
 	"fmt"
 	"io"
 	"os"
@@ -35,6 +36,14 @@ type DB struct {
 	flock           *flock.Flock // ensure mutual exclusion between multiple processes
 	bytesWrite      uint         //total number of bytes written
 	reclaimSize     int64        // count invalid log record (for merge)
+}
+
+// statistics of db
+type Stat struct {
+	keyNum      uint
+	dataFileNum uint
+	reclaimSize int64 //invalid log record pos size
+	diskSize    int64 //x-disk capacity is occupied
 }
 
 // open the bitcask-db instance
@@ -297,6 +306,10 @@ func CheckOptions(options Options) error {
 		return ErrInvalidFileSize
 	}
 
+	if options.DataFileMergeRatio < 0 || options.DataFileMergeRatio > 1 {
+		return ErrInvalidMergeRatio
+	}
+
 	return nil
 }
 
@@ -380,7 +393,7 @@ func (db *DB) AppendLogRecord(log_record *data.LogRecord) (*data.LogRecordPos, e
 		db.bytesWrite = 0 //clear bytesWrite
 	}
 
-	pos := &data.LogRecordPos{Fid: db.activeFile.FileId, Offset: writeOff}
+	pos := &data.LogRecordPos{Fid: db.activeFile.FileId, Offset: writeOff, Size: uint32(size)}
 	return pos, nil
 }
 
@@ -636,4 +649,26 @@ func (db *DB) resetIOType() error {
 		}
 	}
 	return nil
+}
+
+func (db *DB) Stat() *Stat {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	var dataFileNum = uint(len(db.olderFiles))
+	if db.activeFile != nil {
+		dataFileNum += 1
+	}
+
+	diskSize, err := utils.DirSize(db.options.DirPath)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get dir size, error: %v", err))
+	}
+
+	return &Stat{
+		keyNum:      uint(db.index.Size()),
+		dataFileNum: dataFileNum,
+		reclaimSize: db.reclaimSize,
+		diskSize:    diskSize,
+	}
 }
