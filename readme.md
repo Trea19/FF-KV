@@ -35,6 +35,7 @@ type logRecord struct {
 - [x] [Bitcask:Fold(function)] fold over all K/V pairs in a Bitcask datastore
 - [x] [Bitcask:Merge(dir)] merge several data files and produce hintfiles for faster startup
 - [x] write batch
+- [x] view the statistics of Bitcask datastore (key-num/data-file-num/invalid-data-size/disk-size)
 
 **Index**
 
@@ -71,8 +72,7 @@ type logRecordPos struct {
 - [x] encode struct logRecord to binary format
 - [x] decode binary format back to struct logRecord
 - [x] add checksum crc
-- [ ] add time stamp
-- [x] merge
+- [x] merge (user can set "invalid data (bytes) per merge" in option)
 - [ ] backup and recovery
 
 **I/O Interface**

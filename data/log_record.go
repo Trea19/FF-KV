@@ -34,6 +34,7 @@ type LogRecordHeader struct {
 type LogRecordPos struct {
 	Fid    uint32 //which file
 	Offset int64  //where in the file
+	Size   uint32
 }
 
 // for write batch
@@ -88,10 +89,11 @@ func EncodeLogRecord(log_record *LogRecord) ([]byte, int64) {
 
 // param: *logRecordPos, return []byte
 func EncodeLogRecordPos(pos *LogRecordPos) []byte {
-	buf := make([]byte, binary.MaxVarintLen32+binary.MaxVarintLen64)
+	buf := make([]byte, binary.MaxVarintLen32*2+binary.MaxVarintLen64)
 	var idx = 0
 	idx += binary.PutVarint(buf[idx:], int64(pos.Fid))
 	idx += binary.PutVarint(buf[idx:], pos.Offset)
+	idx += binary.PutVarint(buf[idx:], int64(pos.Size))
 
 	return buf[:idx]
 }
@@ -103,9 +105,13 @@ func DeCodeLogRecordPos(buf []byte) *LogRecordPos {
 	idx += n
 	offset, n := binary.Varint(buf[idx:])
 	idx += n
+	size, n := binary.Varint(buf[idx:])
+	idx += n
+
 	return &LogRecordPos{
 		Fid:    uint32(fid),
 		Offset: offset,
+		Size:   uint32(size),
 	}
 }
 

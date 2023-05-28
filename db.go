@@ -34,6 +34,7 @@ type DB struct {
 	isInitial       bool         // first time to set up
 	flock           *flock.Flock // ensure mutual exclusion between multiple processes
 	bytesWrite      uint         //total number of bytes written
+	reclaimSize     int64        // count invalid log record (for merge)
 }
 
 // open the bitcask-db instance
@@ -148,15 +149,16 @@ func (db *DB) LoadIndexFromDataFiles() error {
 		nonMergeFileId = nonMergeFid
 	}
 
-	updataIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
-		var ok bool
+	updateIndex := func(key []byte, typ data.LogRecordType, pos *data.LogRecordPos) {
+		var oldPos *data.LogRecordPos
 		if typ == data.LogRecordDeleted {
-			ok = db.index.Delete(key)
+			oldPos, _ = db.index.Delete(key)
+			db.reclaimSize += int64(oldPos.Size)
 		} else {
-			ok = db.index.Put(key, pos)
+			oldPos = db.index.Put(key, pos)
 		}
-		if !ok {
-			panic("failed to update index")
+		if oldPos != nil {
+			db.reclaimSize += int64(oldPos.Size)
 		}
 	}
 
@@ -195,18 +197,18 @@ func (db *DB) LoadIndexFromDataFiles() error {
 			}
 
 			//  construct memory index and save
-			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset}
+			logRecordPos := &data.LogRecordPos{Fid: fileId, Offset: offset, Size: uint32(size)}
 
 			// parse log key, that includes seqNo and real key
 			realKey, seqNo := parseLogRecordKey(logRecord.Key)
 			if seqNo == noTransactionSeqNo { // not transaction
-				updataIndex(realKey, logRecord.Type, logRecordPos)
+				updateIndex(realKey, logRecord.Type, logRecordPos)
 			} else {
 				// using write batch
 				if logRecord.Type == data.LogRecordTxnFinish {
 					// if transaction finish perfectly, update index
 					for _, tranRecord := range transactionRecords[seqNo] {
-						updataIndex(tranRecord.Record.Key, tranRecord.Record.Type, tranRecord.Pos)
+						updateIndex(tranRecord.Record.Key, tranRecord.Record.Type, tranRecord.Pos)
 					}
 					delete(transactionRecords, seqNo)
 				} else {
@@ -317,9 +319,8 @@ func (db *DB) Put(key []byte, value []byte) error {
 		return err
 	}
 
-	ok := db.index.Put(key, pos)
-	if !ok {
-		return ErrUpdateIndexFailed
+	if oldPos := db.index.Put(key, pos); oldPos != nil {
+		db.reclaimSize += int64(oldPos.Size)
 	}
 
 	return nil
@@ -436,17 +437,20 @@ func (db *DB) Delete(key []byte) error {
 		Type: data.LogRecordDeleted,
 	}
 	// append to log record
-	_, err := db.AppendLogRecordWithLock(logRecord)
+	pos, err := db.AppendLogRecordWithLock(logRecord)
 	if err != nil {
 		return err
 	}
+	db.reclaimSize += int64(pos.Size)
 
 	// delete the key from memory index
-	ok := db.index.Delete(key)
+	oldPos, ok := db.index.Delete(key)
 	if !ok {
 		return ErrUpdateIndexFailed
 	}
-
+	if oldPos != nil {
+		db.reclaimSize += int64(oldPos.Size)
+	}
 	return nil
 }
 

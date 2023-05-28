@@ -130,11 +130,16 @@ func (writeBatch *WriteBatch) Commit() error {
 	// update index
 	for _, lr := range writeBatch.pendingWrites {
 		pos := lrpos[string(lr.Key)]
+		var oldPos *data.LogRecordPos
 		if lr.Type == data.LogRecordNormal {
-			writeBatch.db.index.Put(lr.Key, pos)
+			oldPos = writeBatch.db.index.Put(lr.Key, pos)
 		}
 		if lr.Type == data.LogRecordDeleted {
-			writeBatch.db.index.Delete(lr.Key)
+			oldPos, _ = writeBatch.db.index.Delete(lr.Key)
+		}
+
+		if oldPos != nil {
+			writeBatch.db.reclaimSize += int64(oldPos.Size)
 		}
 	}
 
