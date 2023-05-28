@@ -2,6 +2,7 @@ package bitcaskminidb
 
 import (
 	"bitcask-go/data"
+	"bitcask-go/utils"
 	"io"
 	"os"
 	"path"
@@ -26,6 +27,18 @@ func (db *DB) Merge() error {
 	if db.isMerging {
 		db.mu.Unlock()
 		return ErrMergeIsInProgress
+	}
+
+	// calc merge radio
+	dirSize, err := utils.DirSize(db.options.DirPath)
+	if err != nil {
+		db.mu.Unlock()
+		return err
+	}
+	curRatio := float32(db.reclaimSize) / float32(dirSize)
+	if curRatio < db.options.DataFileMergeRatio {
+		db.mu.Unlock()
+		return ErrMergeRatioUnreached
 	}
 
 	// start merging, set db.isMerge = true
