@@ -30,15 +30,26 @@ func (db *DB) Merge() error {
 	}
 
 	// calc merge radio
-	dirSize, err := utils.DirSize(db.options.DirPath)
+	totalSize, err := utils.DirSize(db.options.DirPath)
 	if err != nil {
 		db.mu.Unlock()
 		return err
 	}
-	curRatio := float32(db.reclaimSize) / float32(dirSize)
+	curRatio := float32(db.reclaimSize) / float32(totalSize)
 	if curRatio < db.options.DataFileMergeRatio {
 		db.mu.Unlock()
 		return ErrMergeRatioUnreached
+	}
+
+	// check available disk capacity
+	availableDiskSize, err := utils.AvailableDiskSize()
+	if err != nil {
+		db.mu.Unlock()
+		return err
+	}
+	if uint64(totalSize-db.reclaimSize) >= availableDiskSize {
+		db.mu.Unlock()
+		return ErrNoEnoughSpaceForMerge
 	}
 
 	// start merging, set db.isMerge = true
@@ -203,6 +214,9 @@ func (db *DB) loadMergeFiles() error {
 			mergeFinished = true
 		}
 		if entry.Name() == data.SeqNoFileName {
+			continue
+		}
+		if entry.Name() == fileLockName {
 			continue
 		}
 		mergeFileNames = append(mergeFileNames, entry.Name())

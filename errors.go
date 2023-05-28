@@ -16,9 +16,10 @@ var (
 	// batch
 	ErrExceedMaxBatchNum = errors.New("exceed the max batch num")
 	//merge
-	ErrMergeIsInProgress   = errors.New("merge is in progress, plz try it later")
-	ErrInvalidMergeRatio   = errors.New("invalid merge ratio, must between 0 and 1")
-	ErrMergeRatioUnreached = errors.New("current radio does not reach the option.mergeRadio")
+	ErrMergeIsInProgress     = errors.New("merge is in progress, plz try it later")
+	ErrInvalidMergeRatio     = errors.New("invalid merge ratio, must between 0 and 1")
+	ErrMergeRatioUnreached   = errors.New("current radio does not reach the option.mergeRadio")
+	ErrNoEnoughSpaceForMerge = errors.New("no enough disk space for merge")
 	//flock
 	ErrDatabaseIsBeingUsed = errors.New("the database directory is used by another process")
 )

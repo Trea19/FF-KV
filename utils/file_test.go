@@ -13,3 +13,10 @@ func TestDirSize(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, dirSize > 0)
 }
+
+func TestAvailableDiskSize(t *testing.T) {
+	size, err := AvailableDiskSize()
+	// t.Log(size / 1024 / 1024 / 1024) //GB
+	assert.Nil(t, err)
+	assert.True(t, size > 0)
+}
