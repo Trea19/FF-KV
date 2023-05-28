@@ -3,9 +3,9 @@ package bitcaskminidb
 import (
 	"bitcask-go/data"
 	"bitcask-go/utils"
+	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -86,6 +86,7 @@ func (db *DB) Merge() error {
 
 	// get merge path
 	mergePath := db.getMergePath()
+	//fmt.Printf(mergePath)
 	// if merge dir exists, delete it
 	if _, err := os.Stat(mergePath); err == nil {
 		if err := os.RemoveAll(mergePath); err != nil {
@@ -183,14 +184,19 @@ func (db *DB) Merge() error {
 
 // merge dir level e.g. /tmp/bitcask VS /tmp/bitcask-merge
 func (db *DB) getMergePath() string {
-	dir := path.Dir(path.Clean(db.options.DirPath))
+	//fmt.Printf(db.options.DirPath + "\n")
+	dir := filepath.Dir(db.options.DirPath)
+	//fmt.Printf(dir + "\n")
 	base := filepath.Base(db.options.DirPath)
+	//fmt.Printf(base + "\n")
 	return filepath.Join(dir, base+MergeDirSuffix)
 }
 
 // when set up db
 func (db *DB) loadMergeFiles() error {
 	mergePath := db.getMergePath()
+
+	//fmt.Printf(mergePath + "\n")
 
 	// if mergePath does not exist, return nil
 	if _, err := os.Stat(mergePath); os.IsNotExist(err) {
@@ -247,7 +253,9 @@ func (db *DB) loadMergeFiles() error {
 	// move merge files to data-file-dir
 	for _, fileName := range mergeFileNames {
 		srcPath := filepath.Join(mergePath, fileName)
+		fmt.Printf(srcPath + "\n")
 		dstPath := filepath.Join(db.options.DirPath, fileName)
+		fmt.Printf(dstPath + "\n")
 		if err := os.Rename(srcPath, dstPath); err != nil {
 			return err
 		}
