@@ -672,3 +672,10 @@ func (db *DB) Stat() *Stat {
 		diskSize:    diskSize,
 	}
 }
+
+// back up
+func (db *DB) BackUp(dir string) error {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+	return utils.CopyDir(db.options.DirPath, dir, []string{fileLockName})
+}

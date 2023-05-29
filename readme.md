@@ -73,12 +73,12 @@ type logRecordPos struct {
 - [x] decode binary format back to struct logRecord
 - [x] add checksum crc
 - [x] merge (user can set "data file merge ratio" in option)
-- [ ] backup and recovery
+- [x] backup and recovery
 
 **I/O Interface**
 
 - [x] encapsulate standard file manipulation API (read/write/sync/close)
-- [ ] use mmap when open db
+- [x] use mmap when open db
 - [x] flock
 - [x] sync strategy (x bytes/sync)
 - [ ] \*WAL-like format (read by block)
