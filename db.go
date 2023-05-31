@@ -40,10 +40,10 @@ type DB struct {
 
 // statistics of db
 type Stat struct {
-	keyNum      uint
-	dataFileNum uint
-	reclaimSize int64 //invalid log record pos size
-	diskSize    int64 //x-disk capacity is occupied
+	KeyNum      uint
+	DataFileNum uint
+	ReclaimSize int64 //invalid log record pos size
+	DiskSize    int64 //x-disk capacity is occupied
 }
 
 // open the bitcask-db instance
@@ -666,10 +666,10 @@ func (db *DB) Stat() *Stat {
 	}
 
 	return &Stat{
-		keyNum:      uint(db.index.Size()),
-		dataFileNum: dataFileNum,
-		reclaimSize: db.reclaimSize,
-		diskSize:    diskSize,
+		KeyNum:      uint(db.index.Size()),
+		DataFileNum: dataFileNum,
+		ReclaimSize: db.reclaimSize,
+		DiskSize:    diskSize,
 	}
 }
 

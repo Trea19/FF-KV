@@ -1,94 +1,57 @@
 # FF-KV
 
-**A Bitcask-based single-node KV storage engine**
+FF-KV is a bitcask-based single-node key-value storage engine.
 
-- Low latency for read/write operations
-- High throughput, especially when writing an incoming stream of random items (append only & write-batch)
-- Handle datasets much larger than memory capacity (separate storage of index and data files)
-- Faster set up after merging (hint file)
-- Multiple index structures are supported (B-tree/Adaptive Radix Tree/ ... )
-- Simple backup and Recovery strategy (todo)
-- ...
+## Features
 
-> Here is a link to the Bitcask paper: https://riak.com/assets/bitcask-intro.pdf
+- Keys and values are arbitrary byte arrays.
+- The basic kv operations are `Put(key,value)`, `Get(key)`, `Delete(key)`, `ListKeys()`, `Fold(function)`, `Write Batch`.
+- The basic engine operations are `Open(options)`, `Close()`, `Sync()`, `Merge(dir)`, `Stat()`.
+- Multiple indexes are supported (B Tree/Adaptive Radix Tree/ B+ Tree)
+- Forward and backward iteration is supported over the data.
+- Checksum is supported.
+- HTTP interface is supported.
+- Backup and recovery strategy is simple.
+- Users can convert I/O type to mmap when starting FF-KV.
+- Handle datasets much larger than memory capacity.
 
-## To-Do List
+## Limitations
 
-**User-oriented**
+- This is not a SQL database. It does not have a relational data model, it does not support SQL queries.
+- Only a single process (possibly multi-threaded) can access a particular database at a time.
 
-```go
-type logRecord struct {
-    Key []byte,
-    Value []byte,
-    Type logRecordType(LogRecordNormal/LogRecordDeleted/etc.)
-}
-```
+## Usage
 
-- [x] options: user can set db_path/datafile_size/if_sync/index_type
-- [x] [Bitcask:Open(opts)] open a new or existing Bitcask datastore
-- [x] [Bitcask:Get(key)] retrieve a value by key from a Bitcask datastore
-- [x] [Bitcask:Put(key, value)] store a key and value in a Bitcask datastore
-- [x] [Bitcask:Delete(key)] delete a key from a Bitcask datastore
-- [x] [Bitcask:Sync()] force any writes to sync to disk
-- [x] [Bitcask:Close()] close a Bitcask datastore and flush all pending writes to disk
-- [x] [Bitcask:ListKeys()] list all keys in a Bitcask datastore
-- [x] [Bitcask:Fold(function)] fold over all K/V pairs in a Bitcask datastore
-- [x] [Bitcask:Merge(dir)] merge several data files and produce hintfiles for faster startup
-- [x] write batch
-- [x] view the statistics of Bitcask datastore (key-num/data-file-num/invalid-data-size/dir-disk-size)
+**Case-1: Using HTTP Interface**
 
-**Index**
+Step-1: Start HTTP server.
 
-```go
-// index node: <key []byte, pos *logRecordPos>
-// when put/delete kv, append log record to active data file before updating index
+![http-1](/imgs/http1-setup.png)
 
-type logRecordPos struct {
-    Fid uint32,
-    Offset uint64,
-}
-```
+Step-2: Send HTTP requests (open a new cmd window).
+ `HandlePut`, `HandleGet`, `HandleDelete`, `HandleListKeys`, `HandleStat`  are supported.
 
-- [x] put logRecordPos to index-node[key]
-- [x] get logRecordPos by key
-- [x] delete index-node[key]
-- [x] iterator (specifying prefixes and reverse traversal are supported)
-- [x] B Tree to store indexes in memory
-- [x] Adaptive Radix Tree to store indexes in memory
-- [x] B+ Tree to store indexes on disk (encapsulates B+ tree:)
-- [x] produce hintfile (after merging)
-- [ ] \*Index lock granularity optimization
+![http-2](/imgs/http2-curl.png)
 
-**Data Files**
+**Case-2: Embedded in Other Programs**
 
-```go
-// binary format log rocord
-+-----+------+----------+------------+-------+---------+
-| crc | type | key size | value size |  key  |  value  |
-+-----+------+----------+------------+-------+---------+
-```
+Please refer to `/example/basic_operation.go` .  // todo, not completed yet :(
 
-- [x] data files directory, active file and older files
-- [x] encode struct logRecord to binary format
-- [x] decode binary format back to struct logRecord
-- [x] add checksum crc
-- [x] merge (user can set "data file merge ratio" in option)
-- [x] backup and recovery
+## Performance
 
-**I/O Interface**
-
-- [x] encapsulate standard file manipulation API (read/write/sync/close)
-- [x] use mmap when open db
-- [x] flock
-- [x] sync strategy (x bytes/sync)
-- [ ] \*WAL-like format (read by block)
-
-**HTTP Interface**
-
-- [x] handlePut
-- [x] handleGet
-- [x] handleDelete
-- [x] handleListKeys
-- [x] handleStat
+// todo
 
 ![fixed-all-bugs](/imgs/test5.23.png)
+
+## Optimization List
+
+- [ ] Index lock granularity optimization
+
+- [ ] MVCC (batch commit)
+
+- [ ] WAL-like format (read by block)
+- [ ] ...
+
+## Link
+
+bitcask-intro: https://riak.com/assets/bitcask-intro.pdf
