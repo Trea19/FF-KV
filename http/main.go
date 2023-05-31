@@ -109,7 +109,8 @@ func handleStat(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
-	fmt.Printf("hello")
+	fmt.Printf("hello\n")
+	initDB()
 
 	// sign in handler
 	http.HandleFunc("/bitcask/put", handlePut)
