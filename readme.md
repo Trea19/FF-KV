@@ -85,6 +85,10 @@ type logRecordPos struct {
 
 **HTTP Interface**
 
-to be continued :)
+- [x] handlePut
+- [x] handleGet
+- [x] handleDelete
+- [x] handleListKeys
+- [x] handleStat
 
 ![fixed-all-bugs](/imgs/test5.23.png)
