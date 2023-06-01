@@ -39,9 +39,8 @@ Please refer to `/example/basic_operation.go` .  // todo, not completed yet :(
 
 ## Performance
 
-// todo
-
-![fixed-all-bugs](/imgs/test5.23.png)
+basic benchmark
+![benchmark](/imgs/benchmark.png)
 
 ## Optimization List
 
